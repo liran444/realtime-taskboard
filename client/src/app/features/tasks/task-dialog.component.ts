@@ -7,6 +7,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Task, TaskStatus, TaskPriority } from '../../models/task.model';
 import { User } from '../../models/user.model';
@@ -31,6 +32,7 @@ export interface TaskDialogData {
     MatDatepickerModule,
     MatButtonModule,
     MatSnackBarModule,
+    MatIconModule,
   ],
   template: `
     <h2 mat-dialog-title>{{ data.mode === 'create' ? 'New Task' : 'Edit Task' }}</h2>
@@ -87,6 +89,19 @@ export interface TaskDialogData {
           </mat-select>
         </mat-form-field>
       </form>
+
+      @if (data.mode === 'edit' && data.task) {
+        <div class="task-meta">
+          <div class="meta-item">
+            <mat-icon class="meta-icon">person_outline</mat-icon>
+            <span>Created by <strong>{{ data.task.createdBy.displayName }}</strong></span>
+          </div>
+          <div class="meta-item">
+            <mat-icon class="meta-icon">schedule</mat-icon>
+            <span>{{ data.task.createdAt | date:'medium' }}</span>
+          </div>
+        </div>
+      }
     </mat-dialog-content>
 
     <mat-dialog-actions align="end">
@@ -115,6 +130,31 @@ export interface TaskDialogData {
 
     .row mat-form-field {
       flex: 1;
+    }
+
+    .task-meta {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      padding: 12px 14px;
+      margin-top: 4px;
+      background: #f5f5f5;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #666;
+    }
+
+    .task-meta .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .task-meta .meta-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      color: #999;
     }
 
     @media (max-width: 600px) {
