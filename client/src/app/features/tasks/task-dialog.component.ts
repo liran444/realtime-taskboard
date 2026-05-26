@@ -1,4 +1,4 @@
-import { Component, inject, OnDestroy } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -7,8 +7,11 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatButtonModule } from '@angular/material/button';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Task, TaskStatus, TaskPriority } from '../../models/task.model';
+import { User } from '../../models/user.model';
 import { TaskService } from '../../core/services/task.service';
+import { UserService } from '../../core/services/user.service';
 
 export interface TaskDialogData {
   mode: 'create' | 'edit';
@@ -27,6 +30,7 @@ export interface TaskDialogData {
     MatSelectModule,
     MatDatepickerModule,
     MatButtonModule,
+    MatSnackBarModule,
   ],
   template: `
     <h2 mat-dialog-title>{{ data.mode === 'create' ? 'New Task' : 'Edit Task' }}</h2>
@@ -72,6 +76,16 @@ export interface TaskDialogData {
           <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
           <mat-datepicker #picker></mat-datepicker>
         </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Assignee</mat-label>
+          <mat-select formControlName="assignee">
+            <mat-option value="">Unassigned</mat-option>
+            @for (user of users; track user._id) {
+              <mat-option [value]="user._id">{{ user.displayName }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
       </form>
     </mat-dialog-content>
 
@@ -114,14 +128,17 @@ export interface TaskDialogData {
     }
   `],
 })
-export class TaskDialogComponent implements OnDestroy {
+export class TaskDialogComponent implements OnInit, OnDestroy {
   private fb = inject(FormBuilder);
   private taskService = inject(TaskService);
+  private userService = inject(UserService);
   private dialogRef = inject(MatDialogRef<TaskDialogComponent>);
+  private snackBar = inject(MatSnackBar);
   data: TaskDialogData = inject(MAT_DIALOG_DATA);
 
   statuses: TaskStatus[] = ['todo', 'in-progress', 'done'];
   priorities: TaskPriority[] = ['low', 'medium', 'high', 'critical'];
+  users: User[] = [];
   saving = false;
 
   form = this.fb.nonNullable.group({
@@ -130,12 +147,19 @@ export class TaskDialogComponent implements OnDestroy {
     priority: [this.data.task?.priority ?? 'medium' as TaskPriority],
     status: [this.data.task?.status ?? 'todo' as TaskStatus],
     dueDate: [this.data.task?.dueDate ? new Date(this.data.task.dueDate) : null as Date | null],
+    assignee: [this.data.task?.assignee?._id ?? ''],
   });
 
   constructor() {
     if (this.data.mode === 'edit' && this.data.task) {
       this.taskService.lockTask(this.data.task._id);
     }
+  }
+
+  ngOnInit(): void {
+    this.userService.getUsers().subscribe(users => {
+      this.users = users;
+    });
   }
 
   statusLabel(s: TaskStatus): string {
@@ -147,13 +171,13 @@ export class TaskDialogComponent implements OnDestroy {
   }
 
   onSave(): void {
-    if (this.form.invalid) { 
+    if (this.form.invalid) {
       return;
     }
     this.saving = true;
 
     const raw = this.form.getRawValue();
-    const payload = {
+    const payload: Record<string, any> = {
       title: raw.title,
       description: raw.description,
       priority: raw.priority,
@@ -161,13 +185,23 @@ export class TaskDialogComponent implements OnDestroy {
       dueDate: raw.dueDate?.toISOString(),
     };
 
+    if (raw.assignee) {
+      payload['assignee'] = raw.assignee;
+    } else {
+      payload['assignee'] = null;
+    }
+
     const op = this.data.mode === 'create'
-      ? this.taskService.createTask(payload)
-      : this.taskService.updateTask(this.data.task!._id, payload);
+      ? this.taskService.createTask(payload as any)
+      : this.taskService.updateTask(this.data.task!._id, payload as any);
 
     op.subscribe({
       next: () => this.dialogRef.close(true),
-      error: () => this.saving = false,
+      error: (err) => {
+        this.saving = false;
+        const message = err.error?.error || 'An error occurred';
+        this.snackBar.open(message, 'Dismiss', { duration: 4000 });
+      },
     });
   }
 
