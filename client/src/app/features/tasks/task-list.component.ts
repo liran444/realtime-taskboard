@@ -546,6 +546,8 @@ export class TaskListComponent implements OnInit, OnDestroy {
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
         this.snackBar.open('Task created', 'Dismiss', { duration: 3000 });
+        // Reload tasks after creation to update the UI
+        this.taskService.loadTasks(this.currentFilters, this.page + 1, this.pageSize);
       }
     });
   }
@@ -574,6 +576,8 @@ export class TaskListComponent implements OnInit, OnDestroy {
         this.taskService.deleteTask(task._id).subscribe({
           next: () => {
             this.snackBar.open('Task deleted', 'Dismiss', { duration: 3000 });
+            // Reload tasks after deletion to update the UI
+            this.taskService.loadTasks(this.currentFilters, this.page + 1, this.pageSize);
           },
           error: () => {
             this.snackBar.open('Failed to delete task', 'Dismiss', { duration: 4000 });
