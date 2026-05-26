@@ -1,13 +1,13 @@
 import { BaseRepository } from './base.repository';
-import { IUser } from '../types';
-import { User } from '../models/user.model';
+import type { User } from '../types';
+import { User as UserModel } from '../models/user.model';
 
-export class UserRepository extends BaseRepository<IUser> {
+export class UserRepository extends BaseRepository<User> {
   constructor() {
-    super(User);
+    super(UserModel);
   }
 
-  async findByEmail(email: string): Promise<IUser | null> {
-    return this.model.findOne({ email: email.toLowerCase() }).lean<IUser>().exec();
+  async findByEmail(email: string): Promise<User | null> {
+    return this.model.findOne({ email: email.toLowerCase() }).lean<User>().exec();
   }
 }

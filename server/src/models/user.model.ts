@@ -1,7 +1,7 @@
 import { Schema, model } from 'mongoose';
-import { IUser } from '../types';
+import type { User as UserDocument } from '../types';
 
-const userSchema = new Schema<IUser>(
+const userSchema = new Schema<UserDocument>(
   {
     email: {
       type: String,
@@ -29,4 +29,4 @@ const userSchema = new Schema<IUser>(
 
 userSchema.index({ email: 1 });
 
-export const User = model<IUser>('User', userSchema);
+export const User = model<UserDocument>('User', userSchema);

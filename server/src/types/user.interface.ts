@@ -2,7 +2,7 @@ import { Types } from 'mongoose';
 
 export type UserRole = 'admin' | 'user';
 
-export interface IUser {
+export interface User {
   _id: Types.ObjectId;
   email: string;
   password: string;

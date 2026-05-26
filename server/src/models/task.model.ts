@@ -1,7 +1,8 @@
 import { Schema, model } from 'mongoose';
-import { ITask, TASK_STATUSES, TASK_PRIORITIES } from '../types';
+import type { Task as TaskDocument } from '../types';
+import { TASK_STATUSES, TASK_PRIORITIES } from '../types';
 
-const taskSchema = new Schema<ITask>(
+const taskSchema = new Schema<TaskDocument>(
   {
     title: {
       type: String,
@@ -49,4 +50,4 @@ taskSchema.index({ assignee: 1 });
 taskSchema.index({ createdBy: 1 });
 taskSchema.index({ dueDate: 1 });
 
-export const Task = model<ITask>('Task', taskSchema);
+export const Task = model<TaskDocument>('Task', taskSchema);

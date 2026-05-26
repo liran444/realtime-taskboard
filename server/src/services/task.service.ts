@@ -1,6 +1,7 @@
 import { Server } from 'socket.io';
 import { TaskRepository } from '../repositories/task.repository';
-import { ITask, TaskStatus, TaskPriority } from '../types';
+import type { Task } from '../types';
+import { TaskStatus, TaskPriority } from '../types';
 
 export interface TaskFilters {
   status?: TaskStatus;
@@ -14,7 +15,7 @@ export class TaskService {
     private readonly io: Server,
   ) {}
 
-  async getAllTasks(filters?: TaskFilters): Promise<ITask[]> {
+  async getAllTasks(filters?: TaskFilters): Promise<Task[]> {
     const query: Record<string, unknown> = {};
     if (filters?.status) query.status = filters.status;
     if (filters?.assignee) query.assignee = filters.assignee;
@@ -22,7 +23,7 @@ export class TaskService {
     return this.taskRepository.findAllPopulated(query);
   }
 
-  async getTaskById(id: string): Promise<ITask> {
+  async getTaskById(id: string): Promise<Task> {
     const task = await this.taskRepository.findByIdPopulated(id);
     if (!task) {
       const error = new Error('Task not found');
@@ -32,7 +33,7 @@ export class TaskService {
     return task;
   }
 
-  async createTask(data: Partial<ITask>, userId: string): Promise<ITask> {
+  async createTask(data: Partial<Task>, userId: string): Promise<Task> {
     const task = await this.taskRepository.create({
       ...data,
       createdBy: userId as any,
@@ -42,7 +43,7 @@ export class TaskService {
     return populated!;
   }
 
-  async updateTask(id: string, data: Partial<ITask>, userId: string): Promise<ITask> {
+  async updateTask(id: string, data: Partial<Task>, userId: string): Promise<Task> {
     const existing = await this.taskRepository.findById(id);
     if (!existing) {
       const error = new Error('Task not found');
@@ -79,7 +80,7 @@ export class TaskService {
     this.io.to('tasks').emit('task:deleted', { taskId: id });
   }
 
-  async updateStatus(id: string, status: TaskStatus, _userId: string): Promise<ITask> {
+  async updateStatus(id: string, status: TaskStatus, _userId: string): Promise<Task> {
     const existing = await this.taskRepository.findById(id);
     if (!existing) {
       const error = new Error('Task not found');

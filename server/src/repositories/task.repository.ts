@@ -1,7 +1,8 @@
 import { FilterQuery } from 'mongoose';
 import { BaseRepository } from './base.repository';
-import { ITask, TaskStatus } from '../types';
-import { Task } from '../models/task.model';
+import type { Task } from '../types';
+import { TaskStatus } from '../types';
+import { Task as TaskModel } from '../models/task.model';
 
 const USER_SUMMARY_FIELDS = 'displayName email';
 const POPULATE_REFS = [
@@ -10,54 +11,54 @@ const POPULATE_REFS = [
   { path: 'lockedBy', select: USER_SUMMARY_FIELDS },
 ];
 
-export class TaskRepository extends BaseRepository<ITask> {
+export class TaskRepository extends BaseRepository<Task> {
   constructor() {
-    super(Task);
+    super(TaskModel);
   }
 
-  async findAllPopulated(filter: FilterQuery<ITask> = {}): Promise<ITask[]> {
+  async findAllPopulated(filter: FilterQuery<Task> = {}): Promise<Task[]> {
     return this.model
       .find(filter)
       .populate(POPULATE_REFS)
-      .lean<ITask[]>()
+      .lean<Task[]>()
       .exec();
   }
 
-  async findByIdPopulated(id: string): Promise<ITask | null> {
+  async findByIdPopulated(id: string): Promise<Task | null> {
     return this.model
       .findById(id)
       .populate(POPULATE_REFS)
-      .lean<ITask>()
+      .lean<Task>()
       .exec();
   }
 
-  async findByAssignee(userId: string): Promise<ITask[]> {
-    return this.model.find({ assignee: userId }).lean<ITask[]>().exec();
+  async findByAssignee(userId: string): Promise<Task[]> {
+    return this.model.find({ assignee: userId }).lean<Task[]>().exec();
   }
 
-  async findByStatus(status: TaskStatus): Promise<ITask[]> {
-    return this.model.find({ status }).lean<ITask[]>().exec();
+  async findByStatus(status: TaskStatus): Promise<Task[]> {
+    return this.model.find({ status }).lean<Task[]>().exec();
   }
 
-  async lockTask(taskId: string, userId: string): Promise<ITask | null> {
+  async lockTask(taskId: string, userId: string): Promise<Task | null> {
     return this.model
       .findByIdAndUpdate(
         taskId,
         { lockedBy: userId, lockedAt: new Date() },
         { new: true }
       )
-      .lean<ITask>()
+      .lean<Task>()
       .exec();
   }
 
-  async unlockTask(taskId: string): Promise<ITask | null> {
+  async unlockTask(taskId: string): Promise<Task | null> {
     return this.model
       .findByIdAndUpdate(
         taskId,
         { $unset: { lockedBy: '', lockedAt: '' } },
         { new: true }
       )
-      .lean<ITask>()
+      .lean<Task>()
       .exec();
   }
 
