@@ -1,6 +1,6 @@
 import { Injectable, NgZone, inject } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
-import type { Socket } from 'socket.io-client';
+import { io, Socket } from 'socket.io-client';
 
 export type SocketStatus = 'idle' | 'connected' | 'reconnecting';
 
@@ -15,7 +15,7 @@ export class SocketService {
     return this.status$.asObservable();
   }
 
-  async connect(token: string): Promise<void> {
+  connect(token: string): void {
     if (this.socket?.connected) {
       return;
     }
@@ -25,8 +25,6 @@ export class SocketService {
       this.socket.disconnect();
     }
 
-    // Dynamically import socket.io-client to avoid bundling it with the Angular application
-    const { io } = await import('socket.io-client');
 
     this.socket = this.ngZone.runOutsideAngular(() =>
       io({
