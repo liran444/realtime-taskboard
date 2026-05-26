@@ -33,9 +33,13 @@ import { Task, TaskPriority } from '../../models/task.model';
       </mat-card-header>
 
       <mat-card-content>
-        @if (task.description) {
-          <p class="task-description">{{ task.description | slice:0:50 }}{{ task.description.length > 50 ? '...' : '' }}</p>
-        }
+        <div class="task-description-container">
+          @if (task.description) {
+            <span class="task-description">{{ task.description | slice:0:50 }}{{ task.description.length > 50 ? '...' : '' }}</span>
+          } @else {
+            <span class="task-description">-- No description --</span>
+          }
+        </div>
 
         <div class="chips-row">
           <span class="priority-chip" [class]="'priority-' + task.priority">
@@ -52,11 +56,21 @@ import { Task, TaskPriority } from '../../models/task.model';
               <mat-icon class="meta-icon">calendar_today</mat-icon>
               <span>{{ task.dueDate | date:'mediumDate' }}</span>
             </div>
+          } @else {
+            <div class="meta-item">
+              <mat-icon class="meta-icon">calendar_today</mat-icon>
+              <span>No due date</span>
+            </div>
           }
           @if (task.assignee) {
             <div class="meta-item">
               <mat-icon class="meta-icon">person</mat-icon>
               <span>{{ task.assignee.displayName }}</span>
+            </div>
+          } @else {
+            <div class="meta-item">
+              <mat-icon class="meta-icon">person</mat-icon>
+              <span>Unassigned</span>
             </div>
           }
         </div>
@@ -135,6 +149,11 @@ import { Task, TaskPriority } from '../../models/task.model';
       overflow-wrap: break-word;
     }
 
+    .task-description-container {
+      min-height: 20px;
+      padding-top: 6px;
+    }
+
     .chips-row {
       display: flex;
       gap: 8px;
@@ -166,6 +185,7 @@ import { Task, TaskPriority } from '../../models/task.model';
       gap: 16px;
       flex-wrap: wrap;
       margin-top: 8px;
+      min-height: 20px;
     }
 
     .meta-item {
