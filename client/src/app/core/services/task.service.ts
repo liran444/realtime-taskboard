@@ -15,9 +15,15 @@ export class TaskService {
 
   loadTasks(filters?: { status?: TaskStatus; priority?: TaskPriority; assignee?: string }): void {
     let params = new HttpParams();
-    if (filters?.status) params = params.set('status', filters.status);
-    if (filters?.priority) params = params.set('priority', filters.priority);
-    if (filters?.assignee) params = params.set('assignee', filters.assignee);
+    if (filters?.status) { 
+      params = params.set('status', filters.status);
+    }
+    if (filters?.priority) { 
+      params = params.set('priority', filters.priority);
+    }
+    if (filters?.assignee) { 
+      params = params.set('assignee', filters.assignee);
+    }
 
     this.http.get<ApiResponse<Task[]>>('/api/tasks', { params }).subscribe(res => {
       this.tasks$.next(res.data);

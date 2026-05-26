@@ -147,7 +147,9 @@ export class TaskDialogComponent implements OnDestroy {
   }
 
   onSave(): void {
-    if (this.form.invalid) return;
+    if (this.form.invalid) { 
+      return;
+    }
     this.saving = true;
 
     const raw = this.form.getRawValue();

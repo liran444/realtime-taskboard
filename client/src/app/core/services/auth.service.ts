@@ -40,7 +40,9 @@ export class AuthService {
 
   getCurrentUser(): User | null {
     const raw = localStorage.getItem(USER_KEY);
-    if (!raw) return null;
+    if (!raw) { 
+      return null;
+    }
     try {
       return JSON.parse(raw) as User;
     } catch {

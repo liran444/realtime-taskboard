@@ -191,7 +191,9 @@ export class TaskCardComponent {
   @Output() toggleStatus = new EventEmitter<Task>();
 
   get isOverdue(): boolean {
-    if (!this.task.dueDate || this.task.status === 'done') return false;
+    if (!this.task.dueDate || this.task.status === 'done') { 
+      return false;
+    }
     return new Date(this.task.dueDate) < new Date();
   }
 

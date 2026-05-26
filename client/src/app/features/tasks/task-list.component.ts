@@ -174,8 +174,12 @@ export class TaskListComponent implements OnInit, OnDestroy {
 
   onFilter(): void {
     const filters: { status?: TaskStatus; priority?: TaskPriority } = {};
-    if (this.filterStatus) filters.status = this.filterStatus as TaskStatus;
-    if (this.filterPriority) filters.priority = this.filterPriority as TaskPriority;
+    if (this.filterStatus) { 
+      filters.status = this.filterStatus as TaskStatus;
+    }
+    if (this.filterPriority) { 
+      filters.priority = this.filterPriority as TaskPriority;
+    }
     this.taskService.loadTasks(filters);
   }
 

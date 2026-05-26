@@ -8,7 +8,9 @@ export class SocketService {
   private socket: Socket | null = null;
 
   connect(token: string): void {
-    if (this.socket?.connected) return;
+    if (this.socket?.connected) { 
+      return;
+    }
 
     if (this.socket) {
       this.socket.removeAllListeners();
