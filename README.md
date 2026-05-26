@@ -165,30 +165,48 @@ Task locking prevents concurrent edits:
 realtime-taskboard/
 ├── docker-compose.yml
 ├── .env.example
-├── client/                       # Angular 17 Frontend
+├── README.md
+├── client/                          # Angular 17 Frontend
 │   ├── Dockerfile
-│   └── src/app/
-│       ├── core/                 # Singleton services, guards, interceptors
-│       │   ├── services/         # AuthService, SocketService, TaskService, UserService
-│       │   ├── guards/           # AuthGuard
-│       │   └── interceptors/     # JwtInterceptor
-│       ├── features/
-│       │   ├── auth/             # Login component
-│       │   └── tasks/            # TaskList, TaskDialog, TaskCard, DeleteConfirm
-│       ├── shared/               # Layout component
-│       └── models/               # TypeScript interfaces
-├── server/                       # Node.js Backend
-│   ├── Dockerfile
+│   ├── angular.json
+│   ├── proxy.conf.json              # Dev proxy for /api and /socket.io
 │   └── src/
-│       ├── config/               # Database connection, environment vars
-│       ├── controllers/          # Auth, Task, User controllers
-│       ├── middleware/            # JWT auth, error handling
-│       ├── models/               # Mongoose schemas
-│       ├── repositories/         # BaseRepository, TaskRepository, UserRepository
-│       ├── services/             # Auth, Task, User services
-│       ├── socket/               # Socket.IO setup + handlers
-│       ├── routes/               # Express route definitions
-│       ├── types/                # TypeScript interfaces
-│       └── utils/                # Password hashing, response factory
-└── seed/                         # Database seed script
+│       ├── index.html
+│       ├── main.ts
+│       ├── styles.scss              # Global styles + self-hosted font @font-face
+│       ├── assets/
+│       │   └── fonts/               # Self-hosted Roboto + Material Icons (woff2)
+│       └── app/
+│           ├── app.component.ts     # Root component (bfcache pagehide/pageshow)
+│           ├── app.config.ts
+│           ├── app.routes.ts
+│           ├── core/                # Singleton services, guards, interceptors
+│           │   ├── services/        # AuthService, SocketService, TaskService, UserService
+│           │   ├── guards/          # AuthGuard
+│           │   └── interceptors/    # JwtInterceptor
+│           ├── features/
+│           │   ├── auth/            # Login component
+│           │   └── tasks/           # TaskList, TaskDialog, TaskCard, DeleteConfirm
+│           ├── shared/
+│           │   └── components/
+│           │       └── layout/      # App toolbar + layout shell
+│           └── models/              # Task and User TypeScript interfaces
+└── server/                          # Node.js Backend
+    ├── Dockerfile
+    ├── seed/
+    │   └── seed.ts                  # Manual user seed script
+    └── src/
+        ├── app.ts                   # Entry point, DI wiring, route registration
+        ├── config/                  # Database connection, environment vars
+        ├── controllers/             # Auth, Task, User controllers
+        ├── middleware/              # JWT auth, error handling
+        ├── models/                  # Mongoose schemas (User, Task)
+        ├── repositories/            # BaseRepository, TaskRepository, UserRepository
+        ├── services/                # Auth, Task, User services
+        ├── socket/                  # Socket.IO setup, handlers, lock expiry cleanup
+        ├── routes/                  # auth.routes, task.routes, user.routes
+        ├── seed/
+        │   └── auto-seed.ts         # Auto-seed default users on first startup
+        ├── types/                   # TypeScript interfaces and enums
+        └── utils/                   # Password hashing, response factory
 ```
