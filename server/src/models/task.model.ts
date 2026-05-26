@@ -7,6 +7,7 @@ const taskSchema = new Schema<TaskDocument>(
     title: {
       type: String,
       required: true,
+      maxlength: 100,
     },
     description: {
       type: String,

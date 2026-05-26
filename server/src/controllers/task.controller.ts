@@ -46,6 +46,11 @@ export class TaskController {
         res.status(response.statusCode).json(response);
         return;
       }
+      if (title.trim().length > 100) {
+        const response = ResponseFactory.error('Title cannot exceed 100 characters', 400);
+        res.status(response.statusCode).json(response);
+        return;
+      }
       if (status && !TASK_STATUSES.includes(status)) {
         const response = ResponseFactory.error(
           `Invalid status. Must be one of: ${TASK_STATUSES.join(', ')}`, 400,
@@ -75,6 +80,11 @@ export class TaskController {
 
       if (title !== undefined && (typeof title !== 'string' || !title.trim())) {
         const response = ResponseFactory.error('Title cannot be empty', 400);
+        res.status(response.statusCode).json(response);
+        return;
+      }
+      if (title && title.trim().length > 100) {
+        const response = ResponseFactory.error('Title cannot exceed 100 characters', 400);
         res.status(response.statusCode).json(response);
         return;
       }
