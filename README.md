@@ -104,7 +104,7 @@ All endpoints (except login and health) require a valid JWT in the `Authorizatio
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/tasks` | List all tasks (query params: `status`, `priority`, `assignee`) |
+| GET | `/api/tasks` | List tasks (paginated). Query params: `page`, `limit`, `status`, `priority`, `assignee` |
 | GET | `/api/tasks/:id` | Get a single task |
 | POST | `/api/tasks` | Create a new task |
 | PUT | `/api/tasks/:id` | Update a task |
@@ -122,6 +122,26 @@ All endpoints (except login and health) require a valid JWT in the `Authorizatio
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/health` | Health check |
+
+### Pagination
+
+The `GET /api/tasks` endpoint supports offset-based pagination:
+
+| Parameter | Default | Max | Description |
+|-----------|---------|-----|-------------|
+| `page` | 1 | - | Page number (1-indexed) |
+| `limit` | 20 | 100 | Items per page |
+
+The response includes a `meta` object alongside `data`:
+
+```json
+{
+  "success": true,
+  "data": [ ... ],
+  "meta": { "total": 500, "page": 1, "limit": 20 },
+  "statusCode": 200
+}
+```
 
 ## Real-Time Features
 
