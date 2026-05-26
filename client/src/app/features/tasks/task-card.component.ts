@@ -121,6 +121,8 @@ import { Task, TaskPriority } from '../../models/task.model';
     .task-title {
       font-size: 16px !important;
       line-height: 1.4;
+      word-break: break-word;
+      overflow-wrap: break-word;
     }
 
     .task-description {
