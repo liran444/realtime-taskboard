@@ -55,7 +55,8 @@ import { SocketService } from '../../core/services/socket.service';
                      [type]="hidePassword ? 'password' : 'text'"
                      autocomplete="current-password">
               <button mat-icon-button matSuffix type="button"
-                      (click)="hidePassword = !hidePassword">
+                      (click)="hidePassword = !hidePassword"
+                      [attr.aria-label]="hidePassword ? 'Show password' : 'Hide password'">
                 <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
               </button>
               @if (form.controls.password.hasError('required') && form.controls.password.touched) {

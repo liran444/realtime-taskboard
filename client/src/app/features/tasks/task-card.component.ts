@@ -65,16 +65,17 @@ import { Task, TaskPriority } from '../../models/task.model';
       <mat-card-actions align="end">
         <button mat-icon-button
                 [matTooltip]="task.status === 'done' ? 'Mark as todo' : 'Mark as done'"
+                [attr.aria-label]="task.status === 'done' ? 'Mark as todo' : 'Mark as done'"
                 (click)="toggleStatus.emit(task)"
                 [disabled]="isLockedByOther">
           <mat-icon>{{ task.status === 'done' ? 'undo' : 'check_circle' }}</mat-icon>
         </button>
-        <button mat-icon-button matTooltip="Edit"
+        <button mat-icon-button matTooltip="Edit" aria-label="Edit task"
                 (click)="edit.emit(task)"
                 [disabled]="isLockedByOther">
           <mat-icon>edit</mat-icon>
         </button>
-        <button mat-icon-button matTooltip="Delete" color="warn"
+        <button mat-icon-button matTooltip="Delete" aria-label="Delete task" color="warn"
                 (click)="delete.emit(task)"
                 [disabled]="isLockedByOther">
           <mat-icon>delete</mat-icon>

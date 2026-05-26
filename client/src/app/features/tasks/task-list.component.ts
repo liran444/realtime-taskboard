@@ -101,6 +101,7 @@ import { User } from '../../models/user.model';
               <button mat-icon-button
                       (click)="toggleSortDirection()"
                       [matTooltip]="sortDirection === 'asc' ? 'Ascending' : 'Descending'"
+                      [attr.aria-label]="sortDirection === 'asc' ? 'Sort ascending' : 'Sort descending'"
                       class="sort-direction-btn">
                 <mat-icon>{{ sortDirection === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
               </button>
