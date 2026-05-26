@@ -11,22 +11,35 @@ export class TaskService {
   private socketService = inject(SocketService);
 
   private tasks$ = new BehaviorSubject<Task[]>([]);
+  private loading$ = new BehaviorSubject<boolean>(false);
   private socketSubs: Subscription[] = [];
 
+  getLoading(): Observable<boolean> {
+    return this.loading$.asObservable();
+  }
+
   loadTasks(filters?: { status?: TaskStatus; priority?: TaskPriority; assignee?: string }): void {
+    this.loading$.next(true);
+
     let params = new HttpParams();
-    if (filters?.status) { 
+    if (filters?.status) {
       params = params.set('status', filters.status);
     }
-    if (filters?.priority) { 
+    if (filters?.priority) {
       params = params.set('priority', filters.priority);
     }
-    if (filters?.assignee) { 
+    if (filters?.assignee) {
       params = params.set('assignee', filters.assignee);
     }
 
-    this.http.get<ApiResponse<Task[]>>('/api/tasks', { params }).subscribe(res => {
-      this.tasks$.next(res.data);
+    this.http.get<ApiResponse<Task[]>>('/api/tasks', { params }).subscribe({
+      next: res => {
+        this.tasks$.next(res.data);
+        this.loading$.next(false);
+      },
+      error: () => {
+        this.loading$.next(false);
+      },
     });
   }
 
@@ -72,7 +85,7 @@ export class TaskService {
         this.tasks$.next(current);
       }),
 
-      this.socketService.on<string>('task:deleted').subscribe(taskId => {
+      this.socketService.on<{ taskId: string }>('task:deleted').subscribe(({ taskId }) => {
         const current = this.tasks$.value.filter(t => t._id !== taskId);
         this.tasks$.next(current);
       }),
