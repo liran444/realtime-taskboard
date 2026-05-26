@@ -2,6 +2,7 @@ import express from 'express';
 import http from 'http';
 import cors from 'cors';
 import { environment } from './config/environment';
+import { connectDatabase } from './config/database';
 
 const app = express();
 const server = http.createServer(app);
@@ -16,6 +17,8 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
-server.listen(environment.serverPort, '0.0.0.0', () => {
-  console.log(`Server running on port ${environment.serverPort} [${environment.nodeEnv}]`);
+connectDatabase().then(() => {
+  server.listen(environment.serverPort, '0.0.0.0', () => {
+    console.log(`Server running on port ${environment.serverPort} [${environment.nodeEnv}]`);
+  });
 });
