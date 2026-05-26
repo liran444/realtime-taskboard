@@ -8,11 +8,14 @@ import { UserRepository } from './repositories/user.repository';
 import { TaskRepository } from './repositories/task.repository';
 import { AuthService } from './services/auth.service';
 import { TaskService } from './services/task.service';
+import { UserService } from './services/user.service';
 import { AuthController } from './controllers/auth.controller';
 import { TaskController } from './controllers/task.controller';
+import { UserController } from './controllers/user.controller';
 import { createAuthRoutes } from './routes/auth.routes';
 import { createTaskRoutes } from './routes/task.routes';
-import { initializeSocket, setupSocketHandlers } from './socket/socket';
+import { createUserRoutes } from './routes/user.routes';
+import { initializeSocket, setupSocketHandlers, startLockExpiryCleanup } from './socket/socket';
 import { errorHandler } from './middleware/error.middleware';
 
 const app = express();
@@ -34,15 +37,19 @@ const userRepository = new UserRepository();
 const taskRepository = new TaskRepository();
 const authService = new AuthService(userRepository);
 const taskService = new TaskService(taskRepository, io);
+const userService = new UserService(userRepository);
 const authController = new AuthController(authService);
 const taskController = new TaskController(taskService);
+const userController = new UserController(userService);
 
 app.use('/api/auth', createAuthRoutes(authController));
 app.use('/api/tasks', createTaskRoutes(taskController));
+app.use('/api/users', createUserRoutes(userController));
 
 app.use(errorHandler);
 
 setupSocketHandlers(taskService);
+startLockExpiryCleanup(taskRepository);
 
 connectDatabase().then(async () => {
   await autoSeed();
