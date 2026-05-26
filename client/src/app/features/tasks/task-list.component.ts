@@ -8,6 +8,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { Subscription } from 'rxjs';
 import { pairwise } from 'rxjs/operators';
 import { LayoutComponent } from '../../shared/components/layout/layout.component';
@@ -34,6 +35,7 @@ import { User } from '../../models/user.model';
     MatSelectModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
+    MatTooltipModule,
     LayoutComponent,
     TaskCardComponent,
   ],
@@ -82,6 +84,28 @@ import { User } from '../../models/user.model';
               }
             </mat-select>
           </mat-form-field>
+
+          <div class="sort-controls">
+            <mat-form-field appearance="outline" class="filter-field">
+              <mat-label>Sort by</mat-label>
+              <mat-select [(ngModel)]="sortBy">
+                <mat-option value="">None</mat-option>
+                <mat-option value="status">Status</mat-option>
+                <mat-option value="priority">Priority</mat-option>
+                <mat-option value="assignee">Assignee</mat-option>
+                <mat-option value="dueDate">Due Date</mat-option>
+                <mat-option value="createdAt">Created</mat-option>
+              </mat-select>
+            </mat-form-field>
+            @if (sortBy) {
+              <button mat-icon-button
+                      (click)="toggleSortDirection()"
+                      [matTooltip]="sortDirection === 'asc' ? 'Ascending' : 'Descending'"
+                      class="sort-direction-btn">
+                <mat-icon>{{ sortDirection === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+              </button>
+            }
+          </div>
         </div>
       </div>
 
@@ -89,14 +113,14 @@ import { User } from '../../models/user.model';
         <div class="loading-state">
           <mat-spinner diameter="48"></mat-spinner>
         </div>
-      } @else if (tasks.length === 0) {
+      } @else if (sortedTasks.length === 0) {
         <div class="empty-state">
           <mat-icon class="empty-icon">assignment</mat-icon>
           <p>No tasks yet. Create your first task!</p>
         </div>
       } @else {
         <div class="task-grid">
-          @for (task of tasks; track task._id) {
+          @for (task of sortedTasks; track task._id) {
             <app-task-card
               [task]="task"
               [currentUserId]="currentUserId"
@@ -142,6 +166,16 @@ import { User } from '../../models/user.model';
 
     .filter-assignee {
       width: 160px;
+    }
+
+    .sort-controls {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .sort-direction-btn {
+      margin-top: -8px;
     }
 
     .filter-field ::ng-deep .mat-mdc-form-field-subscript-wrapper {
@@ -208,9 +242,19 @@ export class TaskListComponent implements OnInit, OnDestroy {
   filterStatus = '';
   filterPriority = '';
   filterAssignee = '';
+  sortBy = '';
+  sortDirection: 'asc' | 'desc' = 'asc';
   loading = false;
   socketStatus: SocketStatus = 'idle';
   private subs: Subscription[] = [];
+
+  private static readonly PRIORITY_ORDER: Record<string, number> = {
+    critical: 4, high: 3, medium: 2, low: 1,
+  };
+
+  private static readonly STATUS_ORDER: Record<string, number> = {
+    'todo': 1, 'in-progress': 2, 'done': 3,
+  };
 
   ngOnInit(): void {
     const user = this.authService.getCurrentUser();
@@ -262,6 +306,44 @@ export class TaskListComponent implements OnInit, OnDestroy {
       filters.assignee = this.filterAssignee;
     }
     return filters;
+  }
+
+  get sortedTasks(): Task[] {
+    if (!this.sortBy) {
+      return this.tasks;
+    }
+
+    const dir = this.sortDirection === 'asc' ? 1 : -1;
+
+    return [...this.tasks].sort((a, b) => {
+      switch (this.sortBy) {
+        case 'priority':
+          return (TaskListComponent.PRIORITY_ORDER[a.priority] - TaskListComponent.PRIORITY_ORDER[b.priority]) * dir;
+        case 'status':
+          return (TaskListComponent.STATUS_ORDER[a.status] - TaskListComponent.STATUS_ORDER[b.status]) * dir;
+        case 'assignee': {
+          const nameA = a.assignee?.displayName?.toLowerCase() ?? '';
+          const nameB = b.assignee?.displayName?.toLowerCase() ?? '';
+          return nameA.localeCompare(nameB) * dir;
+        }
+        case 'dueDate': {
+          const dateA = a.dueDate ? new Date(a.dueDate).getTime() : 0;
+          const dateB = b.dueDate ? new Date(b.dueDate).getTime() : 0;
+          return (dateA - dateB) * dir;
+        }
+        case 'createdAt': {
+          const createdA = new Date(a.createdAt).getTime();
+          const createdB = new Date(b.createdAt).getTime();
+          return (createdA - createdB) * dir;
+        }
+        default:
+          return 0;
+      }
+    });
+  }
+
+  toggleSortDirection(): void {
+    this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
   }
 
   onFilter(): void {
