@@ -18,7 +18,14 @@ export interface LoginResponse {
   };
 }
 
+export interface PaginationMeta {
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   data: T;
+  meta?: PaginationMeta;
 }

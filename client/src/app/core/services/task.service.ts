@@ -17,6 +17,7 @@ export class TaskService {
   private socketService = inject(SocketService);
 
   private tasks$ = new BehaviorSubject<Task[]>([]);
+  private totalCount$ = new BehaviorSubject<number>(0);
   private loading$ = new BehaviorSubject<boolean>(false);
   private socketSubs: Subscription[] = [];
 
@@ -24,10 +25,20 @@ export class TaskService {
     return this.loading$.asObservable();
   }
 
-  loadTasks(filters?: { status?: TaskStatus; priority?: TaskPriority; assignee?: string }): void {
+  getTotalCount(): Observable<number> {
+    return this.totalCount$.asObservable();
+  }
+
+  loadTasks(
+    filters?: { status?: TaskStatus; priority?: TaskPriority; assignee?: string },
+    page = 1,
+    limit = 20,
+  ): void {
     this.loading$.next(true);
 
-    let params = new HttpParams();
+    let params = new HttpParams()
+      .set('page', page.toString())
+      .set('limit', limit.toString());
     if (filters?.status) {
       params = params.set('status', filters.status);
     }
@@ -41,6 +52,7 @@ export class TaskService {
     this.http.get<ApiResponse<Task[]>>('/api/tasks', { params }).subscribe({
       next: res => {
         this.tasks$.next(res.data);
+        this.totalCount$.next(res.meta?.total ?? res.data.length);
         this.loading$.next(false);
       },
       error: () => {
@@ -83,9 +95,10 @@ export class TaskService {
     this.disposeSocketListeners();
 
     this.socketSubs.push(
-      this.socketService.on<Task>('task:created').subscribe(task => {
-        const current = this.tasks$.value;
-        this.tasks$.next([...current, task]);
+      // New tasks from other clients bump the total count. We don't append to
+      // the current page since it may not belong here (wrong sort position).
+      this.socketService.on<Task>('task:created').subscribe(() => {
+        this.totalCount$.next(this.totalCount$.value + 1);
       }),
 
       this.socketService.on<Task>('task:updated').subscribe(task => {
@@ -94,8 +107,11 @@ export class TaskService {
       }),
 
       this.socketService.on<{ taskId: string }>('task:deleted').subscribe(({ taskId }) => {
-        const current = this.tasks$.value.filter(t => t._id !== taskId);
-        this.tasks$.next(current);
+        const wasOnPage = this.tasks$.value.some(t => t._id === taskId);
+        if (wasOnPage) {
+          this.tasks$.next(this.tasks$.value.filter(t => t._id !== taskId));
+        }
+        this.totalCount$.next(Math.max(0, this.totalCount$.value - 1));
       }),
 
       this.socketService.on<{ taskId: string; lockedBy: any }>('task:locked').subscribe(({ taskId, lockedBy }) => {

@@ -131,6 +131,67 @@ import { User } from '../../models/user.model';
           }
         </div>
       }
+
+      @if (totalPages > 1) {
+        <div class="pagination-bar">
+          <div class="page-size-select">
+            <span>Rows per page:</span>
+            <mat-form-field appearance="outline" class="page-size-field">
+              <mat-select [(ngModel)]="pageSize" (selectionChange)="onPageSizeChange()">
+                <mat-option [value]="10">10</mat-option>
+                <mat-option [value]="20">20</mat-option>
+                <mat-option [value]="50">50</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <div class="page-buttons">
+            <button mat-icon-button
+                    (click)="goToPage(0)"
+                    [disabled]="page === 0"
+                    aria-label="First page">
+              <mat-icon>first_page</mat-icon>
+            </button>
+            <button mat-icon-button
+                    (click)="goToPage(page - 1)"
+                    [disabled]="page === 0"
+                    aria-label="Previous page">
+              <mat-icon>chevron_left</mat-icon>
+            </button>
+
+            @for (p of visiblePages; track p) {
+              @if (p === -1) {
+                <span class="ellipsis">...</span>
+              } @else {
+                <button mat-mini-fab
+                        [color]="p === page ? 'primary' : ''"
+                        (click)="goToPage(p)"
+                        [attr.aria-label]="'Page ' + (p + 1)"
+                        class="page-num-btn">
+                  {{ p + 1 }}
+                </button>
+              }
+            }
+
+            <button mat-icon-button
+                    (click)="goToPage(page + 1)"
+                    [disabled]="page >= totalPages - 1"
+                    aria-label="Next page">
+              <mat-icon>chevron_right</mat-icon>
+            </button>
+            <button mat-icon-button
+                    (click)="goToPage(totalPages - 1)"
+                    [disabled]="page >= totalPages - 1"
+                    aria-label="Last page">
+              <mat-icon>last_page</mat-icon>
+            </button>
+          </div>
+
+          <span class="page-range">
+            {{ page * pageSize + 1 }}–{{ Math.min((page + 1) * pageSize, totalCount) }} of {{ totalCount }}
+          </span>
+        </div>
+      }
     </app-layout>
   `,
   styles: [`
@@ -212,6 +273,64 @@ import { User } from '../../models/user.model';
       font-size: 16px;
     }
 
+    .pagination-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 24px;
+      padding: 12px 16px;
+      background: #fafafa;
+      border-radius: 8px;
+      flex-wrap: wrap;
+    }
+
+    .page-size-select {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #666;
+    }
+
+    .page-size-field {
+      width: 70px;
+    }
+
+    .page-size-field ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+      display: none;
+    }
+
+    .page-buttons {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .page-num-btn {
+      width: 36px !important;
+      height: 36px !important;
+      font-size: 13px;
+      box-shadow: none !important;
+    }
+
+    .ellipsis {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      font-size: 14px;
+      color: #999;
+      user-select: none;
+    }
+
+    .page-range {
+      font-size: 13px;
+      color: #666;
+      white-space: nowrap;
+    }
+
     @media (max-width: 600px) {
       .toolbar-row {
         flex-direction: column;
@@ -245,6 +364,10 @@ export class TaskListComponent implements OnInit, OnDestroy {
   filterAssignee = '';
   sortBy = '';
   sortDirection: 'asc' | 'desc' = 'asc';
+  page = 0;
+  pageSize = 20;
+  totalCount = 0;
+  Math = Math;
   loading = false;
   socketStatus: SocketStatus = 'idle';
   private subs: Subscription[] = [];
@@ -275,6 +398,9 @@ export class TaskListComponent implements OnInit, OnDestroy {
       this.taskService.getLoading().subscribe(loading => {
         this.loading = loading;
       }),
+      this.taskService.getTotalCount().subscribe(total => {
+        this.totalCount = total;
+      }),
       this.socketService.socketStatus$.subscribe(status => {
         this.socketStatus = status;
         if (status === 'reconnecting') {
@@ -286,7 +412,7 @@ export class TaskListComponent implements OnInit, OnDestroy {
       this.socketService.socketStatus$.pipe(pairwise()).subscribe(([prev, curr]) => {
         if (prev === 'reconnecting' && curr === 'connected') {
           this.snackBar.open('Connection restored', 'Dismiss', { duration: 3000 });
-          this.taskService.loadTasks(this.currentFilters);
+          this.taskService.loadTasks(this.currentFilters, this.page + 1, this.pageSize);
         }
       }),
     );
@@ -295,7 +421,7 @@ export class TaskListComponent implements OnInit, OnDestroy {
       this.users = users;
     });
 
-    this.taskService.loadTasks();
+    this.taskService.loadTasks(undefined, 1, this.pageSize);
     this.taskService.listenToSocketEvents();
   }
 
@@ -362,8 +488,53 @@ export class TaskListComponent implements OnInit, OnDestroy {
     this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
   }
 
+  get totalPages(): number {
+    return Math.ceil(this.totalCount / this.pageSize) || 1;
+  }
+
+  /**
+   * Builds the array of page indices to render as buttons.
+   * Shows up to 5 pages around the current page with ellipsis (-1) for gaps.
+   * Example for page 10 of 25: [0, -1, 9, 10, 11, -1, 24]
+   */
+  get visiblePages(): number[] {
+    const total = this.totalPages;
+    if (total <= 7) {
+      return Array.from({ length: total }, (_, i) => i);
+    }
+
+    const pages: number[] = [];
+    const current = this.page;
+
+    pages.push(0);
+    if (current > 2) pages.push(-1);
+
+    const start = Math.max(1, current - 1);
+    const end = Math.min(total - 2, current + 1);
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+
+    if (current < total - 3) pages.push(-1);
+    pages.push(total - 1);
+
+    return pages;
+  }
+
+  goToPage(pageIndex: number): void {
+    if (pageIndex < 0 || pageIndex >= this.totalPages || pageIndex === this.page) return;
+    this.page = pageIndex;
+    this.taskService.loadTasks(this.currentFilters, this.page + 1, this.pageSize);
+  }
+
+  onPageSizeChange(): void {
+    this.page = 0;
+    this.taskService.loadTasks(this.currentFilters, 1, this.pageSize);
+  }
+
   onFilter(): void {
-    this.taskService.loadTasks(this.currentFilters);
+    this.page = 0;
+    this.taskService.loadTasks(this.currentFilters, 1, this.pageSize);
   }
 
   onAddTask(): void {
