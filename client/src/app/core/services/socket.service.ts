@@ -1,14 +1,22 @@
 import { Injectable, NgZone, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { io, Socket } from 'socket.io-client';
+
+export type SocketStatus = 'idle' | 'connected' | 'reconnecting';
 
 @Injectable({ providedIn: 'root' })
 export class SocketService {
   private ngZone = inject(NgZone);
   private socket: Socket | null = null;
 
+  private status$ = new BehaviorSubject<SocketStatus>('idle');
+
+  get socketStatus$(): Observable<SocketStatus> {
+    return this.status$.asObservable();
+  }
+
   connect(token: string): void {
-    if (this.socket?.connected) { 
+    if (this.socket?.connected) {
       return;
     }
 
@@ -22,10 +30,23 @@ export class SocketService {
         auth: { token },
         transports: ['websocket', 'polling'],
         reconnection: true,
-        reconnectionAttempts: 10,
+        reconnectionAttempts: Infinity,
         reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
       })
     );
+
+    this.socket.on('connect', () => {
+      this.ngZone.run(() => this.status$.next('connected'));
+    });
+
+    this.socket.on('disconnect', () => {
+      this.ngZone.run(() => this.status$.next('reconnecting'));
+    });
+
+    this.socket.on('reconnect', () => {
+      this.ngZone.run(() => this.status$.next('connected'));
+    });
   }
 
   disconnect(): void {
@@ -34,6 +55,7 @@ export class SocketService {
       this.socket.disconnect();
       this.socket = null;
     }
+    this.status$.next('idle');
   }
 
   on<T>(event: string): Observable<T> {
