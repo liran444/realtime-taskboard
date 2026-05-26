@@ -41,9 +41,13 @@ export interface TaskDialogData {
       <form [formGroup]="form" class="dialog-form">
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Title</mat-label>
-          <input matInput formControlName="title">
+          <input matInput formControlName="title" maxlength="100">
+          <mat-hint align="end">{{ form.controls.title.value.length }} / 100</mat-hint>
           @if (form.controls.title.hasError('required') && form.controls.title.touched) {
             <mat-error>Title is required</mat-error>
+          }
+          @if (form.controls.title.hasError('maxlength')) {
+            <mat-error>Title cannot exceed 100 characters</mat-error>
           }
         </mat-form-field>
 
@@ -74,7 +78,7 @@ export interface TaskDialogData {
 
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Due Date</mat-label>
-          <input matInput [matDatepicker]="picker" formControlName="dueDate">
+          <input matInput [matDatepicker]="picker" formControlName="dueDate" placeholder="MM/DD/YYYY">
           <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
           <mat-datepicker #picker></mat-datepicker>
         </mat-form-field>
@@ -182,7 +186,7 @@ export class TaskDialogComponent implements OnInit, OnDestroy {
   saving = false;
 
   form = this.fb.nonNullable.group({
-    title: [this.data.task?.title ?? '', [Validators.required]],
+    title: [this.data.task?.title ?? '', [Validators.required, Validators.maxLength(100)]],
     description: [this.data.task?.description ?? ''],
     priority: [this.data.task?.priority ?? 'medium' as TaskPriority],
     status: [this.data.task?.status ?? 'todo' as TaskStatus],
