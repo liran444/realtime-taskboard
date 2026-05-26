@@ -26,6 +26,26 @@ export class TaskRepository extends BaseRepository<Task> {
       .exec();
   }
 
+  // Runs the filtered query and count in parallel to avoid two sequential round trips
+  async findPaginated(
+    filter: FilterQuery<Task>,
+    skip: number,
+    limit: number,
+  ): Promise<{ tasks: Task[]; total: number }> {
+    const [tasks, total] = await Promise.all([
+      this.model
+        .find(filter)
+        .populate(POPULATE_REFS)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean<Task[]>()
+        .exec(),
+      this.model.countDocuments(filter).exec(),
+    ]);
+    return { tasks, total };
+  }
+
   async findByIdPopulated(id: string): Promise<Task | null> {
     return this.model
       .findById(id)
