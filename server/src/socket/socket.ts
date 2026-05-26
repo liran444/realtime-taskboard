@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { environment } from '../config/environment';
 import { JwtPayload } from '../middleware/auth.middleware';
 import { TaskService } from '../services/task.service';
+import { TaskRepository } from '../repositories/task.repository';
 
 interface AuthenticatedSocket extends Socket {
   userId?: string;
@@ -42,6 +43,32 @@ export function getIO(): Server {
     throw new Error('Socket.IO not initialized');
   }
   return io;
+}
+
+const LOCK_EXPIRY_MS = 5 * 60 * 1000;
+const LOCK_CHECK_INTERVAL_MS = 60 * 1000;
+
+export function startLockExpiryCleanup(taskRepository: TaskRepository): void {
+  setInterval(async () => {
+    try {
+      const expiryThreshold = new Date(Date.now() - LOCK_EXPIRY_MS);
+      const staleTasks = await taskRepository.findAll({
+        lockedBy: { $ne: null },
+        lockedAt: { $lt: expiryThreshold },
+      } as any);
+
+      for (const task of staleTasks) {
+        await taskRepository.unlockTask(task._id.toString());
+        io.to('tasks').emit('task:unlocked', { taskId: task._id.toString() });
+      }
+
+      if (staleTasks.length > 0) {
+        console.log(`[lock-cleanup] Expired ${staleTasks.length} stale lock(s)`);
+      }
+    } catch (error) {
+      console.error('[lock-cleanup] Error:', (error as Error).message);
+    }
+  }, LOCK_CHECK_INTERVAL_MS);
 }
 
 export function setupSocketHandlers(taskService: TaskService): void {
