@@ -75,6 +75,13 @@ The application auto-seeds default users on first startup when the users collect
 docker compose exec server npm run seed
 ```
 
+To insert randomized tasks for stress testing (defaults to 500, accepts an optional count):
+
+```bash
+docker compose exec server npm run seed:stress
+docker compose exec server npm run seed:stress -- 1000
+```
+
 ### Default Credentials
 
 | Email | Password | Role |
@@ -206,7 +213,8 @@ realtime-taskboard/
         ├── seed/
         │   ├── default-users.ts     # Shared default user definitions
         │   ├── auto-seed.ts         # Auto-seed on first startup (empty collection)
-        │   └── manual-seed.ts       # Manual seed CLI (drops and re-seeds users)
+        │   ├── manual-seed.ts       # Manual seed CLI (drops and re-seeds users)
+        │   └── stress-seed.ts       # Stress-test seed (insert N randomized tasks)
         ├── types/                   # TypeScript interfaces and enums
         └── utils/                   # Password hashing, response factory
 ```
