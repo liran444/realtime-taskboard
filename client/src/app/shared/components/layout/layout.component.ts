@@ -13,7 +13,7 @@ import { AuthService } from '../../../core/services/auth.service';
       <span class="app-title">Taskboard</span>
       <span class="spacer"></span>
       @if (user) {
-        <span class="user-name">{{ user.displayName }}</span>
+        <span class="user-name">Logged in as: {{ user.displayName }}</span>
       }
       <button mat-icon-button (click)="onLogout()" aria-label="Logout">
         <mat-icon>logout</mat-icon>
