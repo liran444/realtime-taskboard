@@ -17,7 +17,9 @@ import { DeleteConfirmDialogComponent } from './delete-confirm-dialog.component'
 import { TaskService } from '../../core/services/task.service';
 import { AuthService } from '../../core/services/auth.service';
 import { SocketService, SocketStatus } from '../../core/services/socket.service';
+import { UserService } from '../../core/services/user.service';
 import { Task, TaskStatus, TaskPriority } from '../../models/task.model';
+import { User } from '../../models/user.model';
 
 @Component({
   selector: 'app-task-list',
@@ -68,6 +70,16 @@ import { Task, TaskStatus, TaskPriority } from '../../models/task.model';
               <mat-option value="medium">Medium</mat-option>
               <mat-option value="high">High</mat-option>
               <mat-option value="critical">Critical</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="filter-field filter-assignee">
+            <mat-label>Assignee</mat-label>
+            <mat-select [(ngModel)]="filterAssignee" (selectionChange)="onFilter()">
+              <mat-option value="">All</mat-option>
+              @for (user of users; track user._id) {
+                <mat-option [value]="user._id">{{ user.displayName }}</mat-option>
+              }
             </mat-select>
           </mat-form-field>
         </div>
@@ -128,6 +140,10 @@ import { Task, TaskStatus, TaskPriority } from '../../models/task.model';
       width: 140px;
     }
 
+    .filter-assignee {
+      width: 160px;
+    }
+
     .filter-field ::ng-deep .mat-mdc-form-field-subscript-wrapper {
       display: none;
     }
@@ -182,13 +198,16 @@ export class TaskListComponent implements OnInit, OnDestroy {
   private taskService = inject(TaskService);
   private authService = inject(AuthService);
   private socketService = inject(SocketService);
+  private userService = inject(UserService);
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
 
   tasks: Task[] = [];
+  users: User[] = [];
   currentUserId = '';
   filterStatus = '';
   filterPriority = '';
+  filterAssignee = '';
   loading = false;
   socketStatus: SocketStatus = 'idle';
   private subs: Subscription[] = [];
@@ -223,17 +242,24 @@ export class TaskListComponent implements OnInit, OnDestroy {
       }),
     );
 
+    this.userService.getUsers().subscribe(users => {
+      this.users = users;
+    });
+
     this.taskService.loadTasks();
     this.taskService.listenToSocketEvents();
   }
 
-  private get currentFilters(): { status?: TaskStatus; priority?: TaskPriority } {
-    const filters: { status?: TaskStatus; priority?: TaskPriority } = {};
+  private get currentFilters(): { status?: TaskStatus; priority?: TaskPriority; assignee?: string } {
+    const filters: { status?: TaskStatus; priority?: TaskPriority; assignee?: string } = {};
     if (this.filterStatus) {
       filters.status = this.filterStatus as TaskStatus;
     }
     if (this.filterPriority) {
       filters.priority = this.filterPriority as TaskPriority;
+    }
+    if (this.filterAssignee) {
+      filters.assignee = this.filterAssignee;
     }
     return filters;
   }
