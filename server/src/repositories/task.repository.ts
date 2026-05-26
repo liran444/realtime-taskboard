@@ -4,6 +4,8 @@ import type { Task } from '../types';
 import { TaskStatus } from '../types';
 import { Task as TaskModel } from '../models/task.model';
 
+// Only project displayName + email when populating user refs — avoids
+// leaking sensitive fields like password hashes to the client
 const USER_SUMMARY_FIELDS = 'displayName email';
 const POPULATE_REFS = [
   { path: 'assignee', select: USER_SUMMARY_FIELDS },
@@ -51,6 +53,8 @@ export class TaskRepository extends BaseRepository<Task> {
       .exec();
   }
 
+  // $unset removes the fields entirely rather than setting them to null,
+  // keeping the document clean and making "is locked?" queries simpler
   async unlockTask(taskId: string): Promise<Task | null> {
     return this.model
       .findByIdAndUpdate(

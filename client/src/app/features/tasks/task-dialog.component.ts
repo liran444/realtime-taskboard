@@ -201,6 +201,8 @@ export class TaskDialogComponent implements OnInit, OnDestroy {
     assignee: [this.data.task?.assignee?._id ?? ''],
   });
 
+  // Acquire a lock when the dialog opens for editing. This prevents other users
+  // from editing the same task simultaneously. The lock is released in ngOnDestroy.
   constructor() {
     if (this.data.mode === 'edit' && this.data.task) {
       this.taskService.lockTask(this.data.task._id);
@@ -260,6 +262,8 @@ export class TaskDialogComponent implements OnInit, OnDestroy {
     this.dialogRef.close(false);
   }
 
+  // Release lock regardless of save or cancel — the server also clears locks
+  // on socket disconnect as a fallback (e.g. if the browser crashes)
   ngOnDestroy(): void {
     if (this.data.mode === 'edit' && this.data.task) {
       this.taskService.unlockTask(this.data.task._id);

@@ -249,6 +249,8 @@ export class TaskListComponent implements OnInit, OnDestroy {
   socketStatus: SocketStatus = 'idle';
   private subs: Subscription[] = [];
 
+  // Numeric rank maps for sorting — higher numbers = higher severity/progress.
+  // Used by sortedTasks to compare items without repeated string comparisons.
   private static readonly PRIORITY_ORDER: Record<string, number> = {
     critical: 4, high: 3, medium: 2, low: 1,
   };
@@ -279,6 +281,8 @@ export class TaskListComponent implements OnInit, OnDestroy {
           this.snackBar.open('Connection lost, reconnecting...', 'Dismiss', { duration: 5000 });
         }
       }),
+      // pairwise() lets us detect the specific transition from reconnecting -> connected,
+      // which is when we need to re-fetch tasks (the server may have changed during the outage)
       this.socketService.socketStatus$.pipe(pairwise()).subscribe(([prev, curr]) => {
         if (prev === 'reconnecting' && curr === 'connected') {
           this.snackBar.open('Connection restored', 'Dismiss', { duration: 3000 });
@@ -309,6 +313,17 @@ export class TaskListComponent implements OnInit, OnDestroy {
     return filters;
   }
 
+  /**
+   * Client-side sort applied on top of the (already server-filtered) task list.
+   * Returns a shallow copy to avoid mutating the original array.
+   *
+   * - priority / status: uses numeric rank maps so "critical" > "high" etc.
+   * - assignee: alphabetical by display name; unassigned tasks sort to the top
+   * - dueDate: epoch comparison; tasks without a due date sort to the top (0)
+   * - createdAt: epoch comparison (always present)
+   *
+   * `dir` flips the comparison result for ascending vs descending.
+   */
   get sortedTasks(): Task[] {
     if (!this.sortBy) {
       return this.tasks;

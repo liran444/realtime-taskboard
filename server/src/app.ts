@@ -19,6 +19,7 @@ import { initializeSocket, setupSocketHandlers, startLockExpiryCleanup } from '.
 import { errorHandler } from './middleware/error.middleware';
 
 const app = express();
+// HTTP server wraps Express so Socket.IO can share the same port
 const server = http.createServer(app);
 
 app.use(cors());
@@ -31,8 +32,11 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
+// Singleton Socket.IO instance — shared across the app for real-time broadcasting
 const io = initializeSocket(server);
 
+// --- Dependency injection wiring (manual composition root) ---
+// Repositories -> Services -> Controllers, each receiving its dependencies via constructor
 const userRepository = new UserRepository();
 const taskRepository = new TaskRepository();
 const authService = new AuthService(userRepository);
@@ -46,11 +50,13 @@ app.use('/api/auth', createAuthRoutes(authController));
 app.use('/api/tasks', createTaskRoutes(taskController));
 app.use('/api/users', createUserRoutes(userController));
 
+// Must be registered last — catches errors thrown/passed by route handlers
 app.use(errorHandler);
 
 setupSocketHandlers(taskService);
 startLockExpiryCleanup(taskRepository);
 
+// DB connection must succeed before the server starts accepting requests
 connectDatabase().then(async () => {
   await autoSeed();
   server.listen(environment.serverPort, '0.0.0.0', () => {

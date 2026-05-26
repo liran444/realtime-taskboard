@@ -5,6 +5,12 @@ import { Task, CreateTaskRequest, UpdateTaskRequest, TaskStatus, TaskPriority } 
 import { ApiResponse } from '../../models/user.model';
 import { SocketService } from './socket.service';
 
+/**
+ * Central task state manager. Owns the canonical task list (tasks$) and
+ * keeps it in sync through two channels:
+ *  1. HTTP requests (loadTasks, createTask, etc.) for user-initiated actions
+ *  2. Socket.IO events (listenToSocketEvents) for changes pushed by other clients
+ */
 @Injectable({ providedIn: 'root' })
 export class TaskService {
   private http = inject(HttpClient);
@@ -71,6 +77,8 @@ export class TaskService {
     this.socketService.emit('task:unlock', taskId);
   }
 
+  // Socket event listeners keep the local task list in sync with changes
+  // made by other users. Each handler immutably updates the BehaviorSubject.
   listenToSocketEvents(): void {
     this.disposeSocketListeners();
 

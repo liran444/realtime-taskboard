@@ -1,5 +1,10 @@
 import { Model, FilterQuery, UpdateQuery } from 'mongoose';
 
+/**
+ * Generic base repository wrapping Mongoose operations.
+ * All read queries use .lean() to return plain JS objects instead of
+ * Mongoose documents, avoiding hydration overhead for read-only data.
+ */
 export class BaseRepository<T> {
   constructor(protected readonly model: Model<T>) {}
 

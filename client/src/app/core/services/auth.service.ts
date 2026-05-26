@@ -5,6 +5,8 @@ import { BehaviorSubject, tap } from 'rxjs';
 import { User, LoginResponse } from '../../models/user.model';
 import { SocketService } from './socket.service';
 
+// Auth state is persisted to localStorage so sessions survive page refreshes.
+// The JWT is attached to API requests by the jwtInterceptor.
 const TOKEN_KEY = 'auth_token';
 const USER_KEY = 'auth_user';
 

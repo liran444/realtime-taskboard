@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { environment } from './environment';
 
+// Singleton guard — prevents multiple connections if called more than once
 let isConnected = false;
 
 export async function connectDatabase(): Promise<void> {

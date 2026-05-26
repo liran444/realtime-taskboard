@@ -2,6 +2,12 @@ import { Injectable, NgZone, inject } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { io, Socket } from 'socket.io-client';
 
+/**
+ * Single enum tracks the connection lifecycle:
+ * - idle: no connection attempted (pre-login or after explicit disconnect)
+ * - connected: socket is active and communicating
+ * - reconnecting: transport dropped, Socket.IO is auto-retrying
+ */
 export type SocketStatus = 'idle' | 'connected' | 'reconnecting';
 
 @Injectable({ providedIn: 'root' })
@@ -26,6 +32,8 @@ export class SocketService {
     }
 
 
+    // Create the socket outside Angular's zone so that Socket.IO's internal
+    // timers and polling don't trigger unnecessary change detection cycles
     this.socket = this.ngZone.runOutsideAngular(() =>
       io({
         auth: { token },
@@ -59,6 +67,11 @@ export class SocketService {
     this.status$.next('idle');
   }
 
+  /**
+   * Wraps a Socket.IO event as an Observable. Events are re-entered into
+   * Angular's zone so subscribers can safely update component state.
+   * The teardown function unregisters the listener to prevent memory leaks.
+   */
   on<T>(event: string): Observable<T> {
     return new Observable<T>(subscriber => {
       if (!this.socket) {

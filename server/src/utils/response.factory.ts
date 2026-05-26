@@ -1,3 +1,8 @@
+/**
+ * Standardized API response envelope.
+ * All REST endpoints return this shape so the client can handle
+ * success/error uniformly without inspecting HTTP status codes.
+ */
 export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;

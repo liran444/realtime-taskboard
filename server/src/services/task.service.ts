@@ -51,12 +51,15 @@ export class TaskService {
       throw error;
     }
 
+    // Only the user who holds the lock (or no lock) can update
     if (existing.lockedBy && existing.lockedBy.toString() !== userId) {
       const error = new Error('Task is locked by another user');
       (error as any).statusCode = 403;
       throw error;
     }
 
+    // Strip immutable/system fields from the update payload, then clear the lock
+    // since saving completes the edit session
     const { _id, createdBy, createdAt, updatedAt, lockedBy, lockedAt, ...updateFields } = data as any;
     await this.taskRepository.update(id, {
       $set: updateFields,

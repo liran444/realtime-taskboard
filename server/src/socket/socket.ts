@@ -10,6 +10,7 @@ interface AuthenticatedSocket extends Socket {
   userId?: string;
 }
 
+// Singleton — initialized once in app.ts and reused for all broadcasting
 let io: Server;
 
 export function initializeSocket(httpServer: HttpServer): Server {
@@ -20,6 +21,8 @@ export function initializeSocket(httpServer: HttpServer): Server {
     },
   });
 
+  // Socket-level auth middleware: verifies the JWT passed via handshake before
+  // allowing the connection. Rejects unauthenticated clients at the transport level.
   io.use((socket: AuthenticatedSocket, next) => {
     const token = socket.handshake.auth.token;
     if (!token) {
@@ -48,6 +51,14 @@ export function getIO(): Server {
 const LOCK_EXPIRY_MS = 5 * 60 * 1000;
 const LOCK_CHECK_INTERVAL_MS = 60 * 1000;
 
+/**
+ * Periodic cleanup for stale task locks.
+ *
+ * When a user locks a task (by opening the edit dialog) but never releases it
+ * (e.g. browser crash, network drop without clean disconnect), the lock would
+ * persist indefinitely. This interval scans for locks older than 5 minutes,
+ * clears them, and broadcasts 'task:unlocked' so all clients update their UI.
+ */
 export function startLockExpiryCleanup(taskRepository: TaskRepository): void {
   setInterval(async () => {
     try {
@@ -76,6 +87,7 @@ export function setupSocketHandlers(taskService: TaskService): void {
     const userId = socket.userId!;
     console.log(`Socket connected: ${socket.id} (user: ${userId})`);
 
+    // All clients join a single 'tasks' room — broadcasts go to everyone
     socket.join('tasks');
 
     socket.on('task:lock', async (taskId: string) => {
@@ -94,6 +106,7 @@ export function setupSocketHandlers(taskService: TaskService): void {
       }
     });
 
+    // Release all locks held by this user on disconnect (browser close, network drop, logout)
     socket.on('disconnect', async () => {
       console.log(`Socket disconnected: ${socket.id} (user: ${userId})`);
       try {

@@ -2,6 +2,11 @@ import { Request, Response, NextFunction } from 'express';
 import { ResponseFactory } from '../utils/response.factory';
 import { environment } from '../config/environment';
 
+/**
+ * Global Express error handler — must be the last middleware registered.
+ * Maps Mongoose-specific errors (ValidationError, CastError, duplicate key)
+ * to meaningful HTTP status codes before falling back to the generic handler.
+ */
 export function errorHandler(err: any, _req: Request, res: Response, _next: NextFunction): void {
   if (environment.nodeEnv === 'development') {
     console.error('[Error]', err);
