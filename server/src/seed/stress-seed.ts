@@ -15,7 +15,9 @@ const DEFAULT_COUNT = 500;
 const TASK_COUNT = parseCount(process.argv[2]);
 
 function parseCount(arg: string | undefined): number {
-  if (!arg) return DEFAULT_COUNT;
+  if (!arg) {
+    return DEFAULT_COUNT;
+  }
   const n = parseInt(arg, 10);
   if (isNaN(n) || n < 1) {
     console.warn(`Invalid count "${arg}", using default (${DEFAULT_COUNT})`);

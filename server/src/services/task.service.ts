@@ -29,9 +29,15 @@ export class TaskService {
 
   async getAllTasks(filters?: TaskFilters, pagination?: PaginationParams): Promise<PaginatedResult<Task>> {
     const query: Record<string, unknown> = {};
-    if (filters?.status) query.status = filters.status;
-    if (filters?.assignee) query.assignee = filters.assignee;
-    if (filters?.priority) query.priority = filters.priority;
+    if (filters?.status) {
+      query.status = filters.status;
+    }
+    if (filters?.assignee) {
+      query.assignee = filters.assignee;
+    }
+    if (filters?.priority) {
+      query.priority = filters.priority;
+    }
 
     const page = pagination?.page ?? 1;
     const limit = pagination?.limit ?? 20;
