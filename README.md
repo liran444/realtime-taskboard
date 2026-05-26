@@ -72,7 +72,7 @@ Open [http://localhost:4200](http://localhost:4200) in your browser.
 The application auto-seeds default users on first startup when the users collection is empty. To manually re-seed:
 
 ```bash
-docker compose exec server npx tsx seed/seed.ts
+docker compose exec server npm run seed
 ```
 
 ### Default Credentials
@@ -193,8 +193,6 @@ realtime-taskboard/
 │           └── models/              # Task and User TypeScript interfaces
 └── server/                          # Node.js Backend
     ├── Dockerfile
-    ├── seed/
-    │   └── seed.ts                  # Manual user seed script
     └── src/
         ├── app.ts                   # Entry point, DI wiring, route registration
         ├── config/                  # Database connection, environment vars
@@ -206,7 +204,9 @@ realtime-taskboard/
         ├── socket/                  # Socket.IO setup, handlers, lock expiry cleanup
         ├── routes/                  # auth.routes, task.routes, user.routes
         ├── seed/
-        │   └── auto-seed.ts         # Auto-seed default users on first startup
+        │   ├── default-users.ts     # Shared default user definitions
+        │   ├── auto-seed.ts         # Auto-seed on first startup (empty collection)
+        │   └── manual-seed.ts       # Manual seed CLI (drops and re-seeds users)
         ├── types/                   # TypeScript interfaces and enums
         └── utils/                   # Password hashing, response factory
 ```

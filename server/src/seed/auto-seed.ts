@@ -10,27 +10,7 @@
  */
 import { User } from '../models/user.model';
 import { hashPassword } from '../utils/password.util';
-
-const DEFAULT_USERS = [
-  {
-    email: 'admin@taskboard.com',
-    password: 'admin123',
-    displayName: 'Admin User',
-    role: 'admin' as const,
-  },
-  {
-    email: 'user1@taskboard.com',
-    password: 'user123',
-    displayName: 'John Doe',
-    role: 'user' as const,
-  },
-  {
-    email: 'user2@taskboard.com',
-    password: 'user123',
-    displayName: 'Jane Smith',
-    role: 'user' as const,
-  },
-];
+import { DEFAULT_USERS } from './default-users';
 
 export async function autoSeed(): Promise<void> {
   const count = await User.countDocuments();
