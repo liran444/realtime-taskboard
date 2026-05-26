@@ -9,18 +9,36 @@ export interface TaskFilters {
   priority?: TaskPriority;
 }
 
+export interface PaginationParams {
+  page: number;
+  limit: number;
+}
+
+export interface PaginatedResult<T> {
+  tasks: T[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export class TaskService {
   constructor(
     private readonly taskRepository: TaskRepository,
     private readonly io: Server,
   ) {}
 
-  async getAllTasks(filters?: TaskFilters): Promise<Task[]> {
+  async getAllTasks(filters?: TaskFilters, pagination?: PaginationParams): Promise<PaginatedResult<Task>> {
     const query: Record<string, unknown> = {};
     if (filters?.status) query.status = filters.status;
     if (filters?.assignee) query.assignee = filters.assignee;
     if (filters?.priority) query.priority = filters.priority;
-    return this.taskRepository.findAllPopulated(query);
+
+    const page = pagination?.page ?? 1;
+    const limit = pagination?.limit ?? 20;
+    const skip = (page - 1) * limit;
+
+    const { tasks, total } = await this.taskRepository.findPaginated(query, skip, limit);
+    return { tasks, total, page, limit };
   }
 
   async getTaskById(id: string): Promise<Task> {
