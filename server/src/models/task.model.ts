@@ -1,5 +1,5 @@
 import { Schema, model } from 'mongoose';
-import { ITask } from '../types';
+import { ITask, TASK_STATUSES, TASK_PRIORITIES } from '../types';
 
 const taskSchema = new Schema<ITask>(
   {
@@ -13,12 +13,12 @@ const taskSchema = new Schema<ITask>(
     },
     status: {
       type: String,
-      enum: ['todo', 'in-progress', 'done'],
+      enum: TASK_STATUSES,
       default: 'todo',
     },
     priority: {
       type: String,
-      enum: ['low', 'medium', 'high', 'critical'],
+      enum: TASK_PRIORITIES,
       default: 'medium',
     },
     dueDate: {
