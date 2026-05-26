@@ -6,14 +6,17 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Subscription } from 'rxjs';
+import { pairwise } from 'rxjs/operators';
 import { LayoutComponent } from '../../shared/components/layout/layout.component';
 import { TaskCardComponent } from './task-card.component';
 import { TaskDialogComponent, TaskDialogData } from './task-dialog.component';
 import { DeleteConfirmDialogComponent } from './delete-confirm-dialog.component';
 import { TaskService } from '../../core/services/task.service';
 import { AuthService } from '../../core/services/auth.service';
-import { SocketService } from '../../core/services/socket.service';
+import { SocketService, SocketStatus } from '../../core/services/socket.service';
 import { Task, TaskStatus, TaskPriority } from '../../models/task.model';
 
 @Component({
@@ -27,11 +30,20 @@ import { Task, TaskStatus, TaskPriority } from '../../models/task.model';
     MatIconModule,
     MatFormFieldModule,
     MatSelectModule,
+    MatProgressSpinnerModule,
+    MatSnackBarModule,
     LayoutComponent,
     TaskCardComponent,
   ],
   template: `
     <app-layout>
+      @if (socketStatus === 'reconnecting') {
+        <div class="connection-banner">
+          <mat-icon>cloud_off</mat-icon>
+          <span>Connection lost, reconnecting...</span>
+        </div>
+      }
+
       <div class="toolbar-row">
         <button mat-raised-button color="primary" (click)="onAddTask()">
           <mat-icon>add</mat-icon> Add Task
@@ -61,10 +73,14 @@ import { Task, TaskStatus, TaskPriority } from '../../models/task.model';
         </div>
       </div>
 
-      @if (tasks.length === 0) {
+      @if (loading) {
+        <div class="loading-state">
+          <mat-spinner diameter="48"></mat-spinner>
+        </div>
+      } @else if (tasks.length === 0) {
         <div class="empty-state">
           <mat-icon class="empty-icon">assignment</mat-icon>
-          <p>No tasks found. Create your first task!</p>
+          <p>No tasks yet. Create your first task!</p>
         </div>
       } @else {
         <div class="task-grid">
@@ -81,6 +97,19 @@ import { Task, TaskStatus, TaskPriority } from '../../models/task.model';
     </app-layout>
   `,
   styles: [`
+    .connection-banner {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #fff3e0;
+      color: #e65100;
+      padding: 10px 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
     .toolbar-row {
       display: flex;
       justify-content: space-between;
@@ -107,6 +136,12 @@ import { Task, TaskStatus, TaskPriority } from '../../models/task.model';
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
       gap: 16px;
+    }
+
+    .loading-state {
+      display: flex;
+      justify-content: center;
+      padding: 64px 0;
     }
 
     .empty-state {
@@ -148,12 +183,15 @@ export class TaskListComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private socketService = inject(SocketService);
   private dialog = inject(MatDialog);
+  private snackBar = inject(MatSnackBar);
 
   tasks: Task[] = [];
   currentUserId = '';
   filterStatus = '';
   filterPriority = '';
-  private sub!: Subscription;
+  loading = false;
+  socketStatus: SocketStatus = 'idle';
+  private subs: Subscription[] = [];
 
   ngOnInit(): void {
     const user = this.authService.getCurrentUser();
@@ -164,23 +202,44 @@ export class TaskListComponent implements OnInit, OnDestroy {
       this.socketService.connect(token);
     }
 
-    this.sub = this.taskService.getTasks().subscribe(tasks => {
-      this.tasks = tasks;
-    });
+    this.subs.push(
+      this.taskService.getTasks().subscribe(tasks => {
+        this.tasks = tasks;
+      }),
+      this.taskService.getLoading().subscribe(loading => {
+        this.loading = loading;
+      }),
+      this.socketService.socketStatus$.subscribe(status => {
+        this.socketStatus = status;
+        if (status === 'reconnecting') {
+          this.snackBar.open('Connection lost, reconnecting...', 'Dismiss', { duration: 5000 });
+        }
+      }),
+      this.socketService.socketStatus$.pipe(pairwise()).subscribe(([prev, curr]) => {
+        if (prev === 'reconnecting' && curr === 'connected') {
+          this.snackBar.open('Connection restored', 'Dismiss', { duration: 3000 });
+          this.taskService.loadTasks(this.currentFilters);
+        }
+      }),
+    );
 
     this.taskService.loadTasks();
     this.taskService.listenToSocketEvents();
   }
 
-  onFilter(): void {
+  private get currentFilters(): { status?: TaskStatus; priority?: TaskPriority } {
     const filters: { status?: TaskStatus; priority?: TaskPriority } = {};
-    if (this.filterStatus) { 
+    if (this.filterStatus) {
       filters.status = this.filterStatus as TaskStatus;
     }
-    if (this.filterPriority) { 
+    if (this.filterPriority) {
       filters.priority = this.filterPriority as TaskPriority;
     }
-    this.taskService.loadTasks(filters);
+    return filters;
+  }
+
+  onFilter(): void {
+    this.taskService.loadTasks(this.currentFilters);
   }
 
   onAddTask(): void {
@@ -189,13 +248,23 @@ export class TaskListComponent implements OnInit, OnDestroy {
       data: { mode: 'create' } as TaskDialogData,
     });
 
-    dialogRef.afterClosed().subscribe();
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.snackBar.open('Task created', 'Dismiss', { duration: 3000 });
+      }
+    });
   }
 
   onEditTask(task: Task): void {
-    this.dialog.open(TaskDialogComponent, {
+    const dialogRef = this.dialog.open(TaskDialogComponent, {
       width: '520px',
       data: { mode: 'edit', task } as TaskDialogData,
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.snackBar.open('Task updated', 'Dismiss', { duration: 3000 });
+      }
     });
   }
 
@@ -207,18 +276,29 @@ export class TaskListComponent implements OnInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe(confirmed => {
       if (confirmed) {
-        this.taskService.deleteTask(task._id).subscribe();
+        this.taskService.deleteTask(task._id).subscribe({
+          next: () => {
+            this.snackBar.open('Task deleted', 'Dismiss', { duration: 3000 });
+          },
+          error: () => {
+            this.snackBar.open('Failed to delete task', 'Dismiss', { duration: 4000 });
+          },
+        });
       }
     });
   }
 
   onToggleStatus(task: Task): void {
     const newStatus: TaskStatus = task.status === 'done' ? 'todo' : 'done';
-    this.taskService.updateStatus(task._id, newStatus).subscribe();
+    this.taskService.updateStatus(task._id, newStatus).subscribe({
+      error: () => {
+        this.snackBar.open('Failed to update status', 'Dismiss', { duration: 4000 });
+      },
+    });
   }
 
   ngOnDestroy(): void {
-    this.sub?.unsubscribe();
+    this.subs.forEach(sub => sub.unsubscribe());
     this.taskService.disposeSocketListeners();
   }
 }
