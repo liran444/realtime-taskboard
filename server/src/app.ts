@@ -4,6 +4,11 @@ import cors from 'cors';
 import { environment } from './config/environment';
 import { connectDatabase } from './config/database';
 import { autoSeed } from './seed/auto-seed';
+import { UserRepository } from './repositories/user.repository';
+import { AuthService } from './services/auth.service';
+import { AuthController } from './controllers/auth.controller';
+import { createAuthRoutes } from './routes/auth.routes';
+import { errorHandler } from './middleware/error.middleware';
 
 const app = express();
 const server = http.createServer(app);
@@ -17,6 +22,14 @@ app.get('/api/health', (_req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+const userRepository = new UserRepository();
+const authService = new AuthService(userRepository);
+const authController = new AuthController(authService);
+
+app.use('/api/auth', createAuthRoutes(authController));
+
+app.use(errorHandler);
 
 connectDatabase().then(async () => {
   await autoSeed();
