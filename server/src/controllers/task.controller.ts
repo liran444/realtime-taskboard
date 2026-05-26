@@ -15,12 +15,20 @@ export class TaskController {
       const status = req.query.status as string | undefined;
       const assignee = req.query.assignee as string | undefined;
       const priority = req.query.priority as string | undefined;
-      const tasks = await this.taskService.getAllTasks({
-        status: status as TaskStatus,
-        assignee,
-        priority: priority as TaskPriority,
+
+      const page = Math.max(1, parseInt(req.query.page as string, 10) || 1);
+      const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string, 10) || 20));
+
+      const result = await this.taskService.getAllTasks(
+        { status: status as TaskStatus, assignee, priority: priority as TaskPriority },
+        { page, limit },
+      );
+
+      const response = ResponseFactory.paginated(result.tasks, {
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
       });
-      const response = ResponseFactory.success(tasks);
       res.status(response.statusCode).json(response);
     } catch (error) {
       next(error);

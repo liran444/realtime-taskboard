@@ -3,10 +3,17 @@
  * All REST endpoints return this shape so the client can handle
  * success/error uniformly without inspecting HTTP status codes.
  */
+export interface PaginationMeta {
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
+  meta?: PaginationMeta;
   statusCode: number;
 }
 
@@ -21,5 +28,9 @@ export class ResponseFactory {
 
   static created<T>(data: T): ApiResponse<T> {
     return { success: true, data, statusCode: 201 };
+  }
+
+  static paginated<T>(data: T, meta: PaginationMeta): ApiResponse<T> & { meta: PaginationMeta } {
+    return { success: true, data, meta, statusCode: 200 };
   }
 }
