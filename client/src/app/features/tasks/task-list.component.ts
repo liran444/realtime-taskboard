@@ -507,7 +507,9 @@ export class TaskListComponent implements OnInit, OnDestroy {
     const current = this.page;
 
     pages.push(0);
-    if (current > 2) pages.push(-1);
+    if (current > 2) {
+      pages.push(-1);
+    }
 
     const start = Math.max(1, current - 1);
     const end = Math.min(total - 2, current + 1);
@@ -515,14 +517,18 @@ export class TaskListComponent implements OnInit, OnDestroy {
       pages.push(i);
     }
 
-    if (current < total - 3) pages.push(-1);
+    if (current < total - 3) {
+      pages.push(-1);
+    }
     pages.push(total - 1);
 
     return pages;
   }
 
   goToPage(pageIndex: number): void {
-    if (pageIndex < 0 || pageIndex >= this.totalPages || pageIndex === this.page) return;
+    if (pageIndex < 0 || pageIndex >= this.totalPages || pageIndex === this.page) {
+      return;
+    }
     this.page = pageIndex;
     this.taskService.loadTasks(this.currentFilters, this.page + 1, this.pageSize);
   }
