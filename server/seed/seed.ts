@@ -1,7 +1,11 @@
 /**
  * Manual seed for assignment/demo purposes only.
+ * 
  * Seeds the users collection with the default users.
  * Usage: docker compose exec server npx tsx seed/seed.ts
+ * 
+ * NOTE: In a production application this would NOT exist — user creation would go
+ *       through a proper registration flow or admin provisioning process.
  */
 import mongoose from 'mongoose';
 import { environment } from '../src/config/environment';
