@@ -1,6 +1,7 @@
 import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -353,6 +354,8 @@ export class TaskListComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private socketService = inject(SocketService);
   private userService = inject(UserService);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
 
@@ -386,6 +389,12 @@ export class TaskListComponent implements OnInit, OnDestroy {
     const user = this.authService.getCurrentUser();
     this.currentUserId = user?._id ?? '';
 
+    // Restore page from URL query param (1-indexed in URL, 0-indexed internally)
+    const pageParam = parseInt(this.route.snapshot.queryParams['page'], 10);
+    if (pageParam > 1) {
+      this.page = pageParam - 1;
+    }
+
     const token = this.authService.getToken();
     if (token && !this.socketService.isConnected) {
       this.socketService.connect(token);
@@ -400,6 +409,13 @@ export class TaskListComponent implements OnInit, OnDestroy {
       }),
       this.taskService.getTotalCount().subscribe(total => {
         this.totalCount = total;
+        // Clamp page if the URL had a page beyond the actual last page
+        const maxPage = Math.max(0, Math.ceil(total / this.pageSize) - 1);
+        if (this.page > maxPage && total > 0) {
+          this.page = maxPage;
+          this.syncPageToUrl();
+          this.taskService.loadTasks(this.currentFilters, this.page + 1, this.pageSize);
+        }
       }),
       this.socketService.socketStatus$.subscribe(status => {
         this.socketStatus = status;
@@ -421,7 +437,7 @@ export class TaskListComponent implements OnInit, OnDestroy {
       this.users = users;
     });
 
-    this.taskService.loadTasks(undefined, 1, this.pageSize);
+    this.taskService.loadTasks(undefined, this.page + 1, this.pageSize);
     this.taskService.listenToSocketEvents();
   }
 
@@ -530,17 +546,32 @@ export class TaskListComponent implements OnInit, OnDestroy {
       return;
     }
     this.page = pageIndex;
+    this.syncPageToUrl();
     this.taskService.loadTasks(this.currentFilters, this.page + 1, this.pageSize);
   }
 
   onPageSizeChange(): void {
     this.page = 0;
+    this.syncPageToUrl();
     this.taskService.loadTasks(this.currentFilters, 1, this.pageSize);
   }
 
   onFilter(): void {
     this.page = 0;
+    this.syncPageToUrl();
     this.taskService.loadTasks(this.currentFilters, 1, this.pageSize);
+  }
+
+  // Keeps the URL in sync with the current page (1-indexed).
+  // Page 1 removes the param for a cleaner default URL.
+  private syncPageToUrl(): void {
+    const page = this.page > 0 ? (this.page + 1).toString() : null;
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { page },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 
   onAddTask(): void {
