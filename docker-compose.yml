@@ -1,0 +1,40 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: taskboard-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  server:
+    build: ./server
+    container_name: taskboard-server
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    volumes:
+      - ./server/src:/app/src
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  client:
+    build: ./client
+    container_name: taskboard-client
+    ports:
+      - "4200:4200"
+    volumes:
+      - ./client/src:/app/src
+    depends_on:
+      - server
+
+volumes:
+  mongo-data:
