@@ -38,8 +38,8 @@ export interface TaskDialogData {
     <h2 mat-dialog-title>{{ data.mode === 'create' ? 'New Task' : 'Edit Task' }}</h2>
 
     <mat-dialog-content>
-      <form [formGroup]="form" class="dialog-form">
-        <mat-form-field appearance="outline" class="full-width">
+      <form [formGroup]="form" class="dialog-form small-padding-top">
+        <mat-form-field appearance="outline" class="full-width small-padding-top">
           <mat-label>Title</mat-label>
           <input matInput formControlName="title" maxlength="100">
           <mat-hint align="end">{{ form.controls.title.value.length }} / 100</mat-hint>
@@ -51,9 +51,13 @@ export interface TaskDialogData {
           }
         </mat-form-field>
 
-        <mat-form-field appearance="outline" class="full-width">
+        <mat-form-field appearance="outline" class="full-width small-padding-top">
+          <mat-hint align="end">{{ form.controls.description.value.length }} / 500</mat-hint>
           <mat-label>Description</mat-label>
-          <textarea matInput formControlName="description" rows="3"></textarea>
+          <textarea matInput formControlName="description" rows="3" maxlength="500"></textarea>
+          @if (form.controls.description.hasError('maxlength')) {
+            <mat-error>Description cannot exceed 500 characters</mat-error>
+          }
         </mat-form-field>
 
         <div class="row">
@@ -120,6 +124,9 @@ export interface TaskDialogData {
       display: flex;
       flex-direction: column;
       min-width: 400px;
+    }
+
+    .small-padding-top {
       padding-top: 4px;
     }
 
@@ -187,7 +194,7 @@ export class TaskDialogComponent implements OnInit, OnDestroy {
 
   form = this.fb.nonNullable.group({
     title: [this.data.task?.title ?? '', [Validators.required, Validators.maxLength(100)]],
-    description: [this.data.task?.description ?? ''],
+    description: [this.data.task?.description ?? '', [Validators.maxLength(500)]],
     priority: [this.data.task?.priority ?? 'medium' as TaskPriority],
     status: [this.data.task?.status ?? 'todo' as TaskStatus],
     dueDate: [this.data.task?.dueDate ? new Date(this.data.task.dueDate) : null as Date | null],

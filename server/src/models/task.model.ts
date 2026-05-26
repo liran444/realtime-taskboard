@@ -12,6 +12,7 @@ const taskSchema = new Schema<TaskDocument>(
     description: {
       type: String,
       default: '',
+      maxlength: 500,
     },
     status: {
       type: String,

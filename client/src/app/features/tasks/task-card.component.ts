@@ -130,6 +130,8 @@ import { Task, TaskPriority } from '../../models/task.model';
       font-size: 13px;
       line-height: 1.5;
       margin: 8px 0;
+      word-break: break-word;
+      overflow-wrap: break-word;
     }
 
     .chips-row {
