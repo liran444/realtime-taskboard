@@ -431,9 +431,6 @@ export class TaskListComponent implements OnInit, OnDestroy {
           this.taskService.loadTasks(this.currentFilters, this.page + 1, this.pageSize);
         }
       }),
-      this.taskService.getReload().subscribe(() => {
-        this.taskService.loadTasks(this.currentFilters, this.page + 1, this.pageSize);
-      }),
     );
 
     this.userService.getUsers().subscribe(users => {
