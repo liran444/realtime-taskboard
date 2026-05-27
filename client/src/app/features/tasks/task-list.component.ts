@@ -602,6 +602,8 @@ export class TaskListComponent implements OnInit, OnDestroy {
   }
 
   onDeleteTask(task: Task): void {
+    this.taskService.lockTask(task._id);
+
     const dialogRef = this.dialog.open(DeleteConfirmDialogComponent, {
       width: '400px',
       data: { title: task.title },
@@ -612,13 +614,15 @@ export class TaskListComponent implements OnInit, OnDestroy {
         this.taskService.deleteTask(task._id).subscribe({
           next: () => {
             this.snackBar.open('Task deleted', 'Dismiss', { duration: 3000 });
-            // Reload tasks after deletion to update the UI
             this.taskService.loadTasks(this.currentFilters, this.page + 1, this.pageSize);
           },
           error: () => {
+            this.taskService.unlockTask(task._id);
             this.snackBar.open('Failed to delete task', 'Dismiss', { duration: 4000 });
           },
         });
+      } else {
+        this.taskService.unlockTask(task._id);
       }
     });
   }
