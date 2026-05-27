@@ -132,7 +132,7 @@ import { User } from '../../models/user.model';
         </div>
       }
 
-      @if (totalPages > 1) {
+      @if (totalPages > 1 || pageSize !== 20) {
         <div class="pagination-bar">
           <div class="page-size-select">
             <span>Rows per page:</span>
