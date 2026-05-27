@@ -20,6 +20,9 @@ export class TaskService {
   private totalCount$ = new BehaviorSubject<number>(0);
   private loading$ = new BehaviorSubject<boolean>(false);
   private socketSubs: Subscription[] = [];
+  private currentPage = 1;
+  private pageSize = 20;
+  private currentFilters?: { status?: TaskStatus; priority?: TaskPriority; assignee?: string };
 
   getLoading(): Observable<boolean> {
     return this.loading$.asObservable();
@@ -34,6 +37,9 @@ export class TaskService {
     page = 1,
     limit = 20,
   ): void {
+    this.currentPage = page;
+    this.pageSize = limit;
+    this.currentFilters = filters;
     this.loading$.next(true);
 
     let params = new HttpParams()
@@ -95,10 +101,8 @@ export class TaskService {
     this.disposeSocketListeners();
 
     this.socketSubs.push(
-      // New tasks from other clients bump the total count. We don't append to
-      // the current page since it may not belong here (wrong sort position).
       this.socketService.on<Task>('task:created').subscribe(() => {
-        this.totalCount$.next(this.totalCount$.value + 1);
+        this.loadTasks(this.currentFilters, this.currentPage, this.pageSize);
       }),
 
       this.socketService.on<Task>('task:updated').subscribe(task => {
