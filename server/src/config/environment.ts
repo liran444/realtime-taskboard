@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+// This is currently set with default values for demo purposes only.
 export const environment = {
   mongoUri: process.env.MONGO_URI || 'mongodb://localhost:27017/taskboard',
   jwtSecret: process.env.JWT_SECRET || 'default-secret-change-me',
