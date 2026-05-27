@@ -1,6 +1,7 @@
 # Realtime Taskboard
 
-A full-stack real-time to-do application built with Angular 17, Node.js/Express, MongoDB, and Socket.IO, fully containerized with Docker Compose.
+A full-stack real-time to-do application built with Angular 17, Node.js/Express, MongoDB, and Socket.IO, fully runnable via Docker Compose.
+Features a paginated tasks list with real-time sync between connected clients.
 
 ## Tech Stack
 
