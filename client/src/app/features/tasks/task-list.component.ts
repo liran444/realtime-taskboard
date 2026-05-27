@@ -90,7 +90,6 @@ import { User } from '../../models/user.model';
             <mat-form-field appearance="outline" class="filter-field">
               <mat-label>Sort by</mat-label>
               <mat-select [(ngModel)]="sortBy">
-                <mat-option value="">None</mat-option>
                 <mat-option value="status">Status</mat-option>
                 <mat-option value="priority">Priority</mat-option>
                 <mat-option value="assignee">Assignee</mat-option>
@@ -365,8 +364,8 @@ export class TaskListComponent implements OnInit, OnDestroy {
   filterStatus = '';
   filterPriority = '';
   filterAssignee = '';
-  sortBy = '';
-  sortDirection: 'asc' | 'desc' = 'asc';
+  sortBy = 'createdAt';
+  sortDirection: 'asc' | 'desc' = 'desc';
   page = 0;
   pageSize = 20;
   totalCount = 0;
