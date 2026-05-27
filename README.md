@@ -5,13 +5,15 @@ Features a paginated tasks list with real-time sync between connected clients.
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Frontend | Angular 17, Angular Material, RxJS, Socket.IO Client |
-| Backend | Node.js, Express, TypeScript, Socket.IO |
-| Database | MongoDB 7 (Mongoose ODM) |
-| Auth | JWT (JSON Web Tokens) |
-| Containerization | Docker, Docker Compose |
+
+| Layer            | Technology                                           |
+| ---------------- | ---------------------------------------------------- |
+| Frontend         | Angular 17, Angular Material, RxJS, Socket.IO Client |
+| Backend          | Node.js, Express, TypeScript, Socket.IO              |
+| Database         | MongoDB 7 (Mongoose ODM)                             |
+| Auth             | JWT (JSON Web Tokens)                                |
+| Containerization | Docker, Docker Compose                               |
+
 
 ## Architecture
 
@@ -53,16 +55,18 @@ cp .env.example .env
 ### 2. Start the application
 
 ```bash
-docker compose up --build
+docker compose up --build -d
 ```
 
 This starts three containers:
 
-| Container | Service | Port |
-|-----------|---------|------|
-| `taskboard-mongo` | MongoDB 7 | 27017 |
-| `taskboard-server` | Node.js API + Socket.IO | 3000 |
-| `taskboard-client` | Angular 17 dev server | 4200 |
+
+| Container          | Service                 | Port  |
+| ------------------ | ----------------------- | ----- |
+| `taskboard-mongo`  | MongoDB 7               | 27017 |
+| `taskboard-server` | Node.js API + Socket.IO | 3000  |
+| `taskboard-client` | Angular 17 dev server   | 4200  |
+
 
 ### 3. Access the app
 
@@ -77,6 +81,7 @@ docker compose exec server npm run seed
 ```
 
 To insert randomized tasks for stress testing (defaults to 500, accepts an optional count):
+NOTE, the seed is an external standalone script. After execution, please refresh the page.
 
 ```bash
 docker compose exec server npm run seed:stress
@@ -85,11 +90,15 @@ docker compose exec server npm run seed:stress -- 1000
 
 ### Default Credentials
 
-| Email | Password | Role |
-|-------|----------|------|
-| admin@taskboard.com | admin123 | Admin |
-| user1@taskboard.com | user123 | User |
-| user2@taskboard.com | user123 | User |
+
+| Email                                             | Password | Role  |
+| ------------------------------------------------- | -------- | ----- |
+| [admin@taskboard.com](mailto:admin@taskboard.com) | admin123 | Admin |
+| [user1@taskboard.com](mailto:user1@taskboard.com) | user123  | User  |
+| [user2@taskboard.com](mailto:user2@taskboard.com) | user123  | User  |
+
+- Roles do not serve any purpose yet
+
 
 ## API Reference
 
@@ -97,41 +106,51 @@ All endpoints (except login and health) require a valid JWT in the `Authorizatio
 
 ### Auth
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/auth/login` | Login with email/password, returns JWT token |
+
+| Method | Endpoint          | Description                                  |
+| ------ | ----------------- | -------------------------------------------- |
+| POST   | `/api/auth/login` | Login with email/password, returns JWT token |
+
 
 ### Tasks
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/tasks` | List tasks (paginated). Query params: `page`, `limit`, `status`, `priority`, `assignee` |
-| GET | `/api/tasks/:id` | Get a single task |
-| POST | `/api/tasks` | Create a new task |
-| PUT | `/api/tasks/:id` | Update a task |
-| DELETE | `/api/tasks/:id` | Delete a task |
-| PATCH | `/api/tasks/:id/status` | Quick status update (body: `{ status }`) |
+
+| Method | Endpoint                | Description                                                                             |
+| ------ | ----------------------- | --------------------------------------------------------------------------------------- |
+| GET    | `/api/tasks`            | List tasks (paginated). Query params: `page`, `limit`, `status`, `priority`, `assignee` |
+| GET    | `/api/tasks/:id`        | Get a single task                                                                       |
+| POST   | `/api/tasks`            | Create a new task                                                                       |
+| PUT    | `/api/tasks/:id`        | Update a task                                                                           |
+| DELETE | `/api/tasks/:id`        | Delete a task                                                                           |
+| PATCH  | `/api/tasks/:id/status` | Quick status update (body: `{ status }`)                                                |
+
 
 ### Users
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/users` | List all users (for assignee dropdown) |
+
+| Method | Endpoint     | Description                            |
+| ------ | ------------ | -------------------------------------- |
+| GET    | `/api/users` | List all users (for assignee dropdown) |
+
 
 ### Health
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/health` | Health check |
+
+| Method | Endpoint      | Description  |
+| ------ | ------------- | ------------ |
+| GET    | `/api/health` | Health check |
+
 
 ### Pagination
 
 The `GET /api/tasks` endpoint supports offset-based pagination:
 
-| Parameter | Default | Max | Description |
-|-----------|---------|-----|-------------|
-| `page` | 1 | - | Page number (1-indexed) |
-| `limit` | 20 | 100 | Items per page |
+
+| Parameter | Default | Max | Description             |
+| --------- | ------- | --- | ----------------------- |
+| `page`    | 1       | -   | Page number (1-indexed) |
+| `limit`   | 20      | 100 | Items per page          |
+
 
 The response includes a `meta` object alongside `data`:
 
@@ -156,15 +175,17 @@ The application uses Socket.IO for real-time synchronization across all connecte
 
 ### Socket Events
 
-| Event | Direction | Payload |
-|-------|-----------|---------|
-| `task:created` | Server → Client | Full task object |
-| `task:updated` | Server → Client | Full task object |
-| `task:deleted` | Server → Client | `{ taskId }` |
-| `task:locked` | Server → Client | `{ taskId, lockedBy: { userId, displayName } }` |
-| `task:unlocked` | Server → Client | `{ taskId }` |
-| `task:lock` | Client → Server | `taskId` |
-| `task:unlock` | Client → Server | `taskId` |
+
+| Event           | Direction       | Payload                                         |
+| --------------- | --------------- | ----------------------------------------------- |
+| `task:created`  | Server → Client | Full task object                                |
+| `task:updated`  | Server → Client | Full task object                                |
+| `task:deleted`  | Server → Client | `{ taskId }`                                    |
+| `task:locked`   | Server → Client | `{ taskId, lockedBy: { userId, displayName } }` |
+| `task:unlocked` | Server → Client | `{ taskId }`                                    |
+| `task:lock`     | Client → Server | `taskId`                                        |
+| `task:unlock`   | Client → Server | `taskId`                                        |
+
 
 ## Task Locking
 
@@ -178,14 +199,16 @@ Task locking prevents concurrent edits:
 
 ## Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `MONGO_URI` | `mongodb://mongo:27017/taskboard` | MongoDB connection string |
-| `JWT_SECRET` | `taskboard-dev-secret-key-change-in-production` | Secret for signing JWTs |
-| `JWT_EXPIRATION` | `24h` | JWT token expiration |
-| `SERVER_PORT` | `3000` | Backend server port |
-| `CLIENT_PORT` | `4200` | Frontend dev server port |
-| `NODE_ENV` | `development` | Node environment |
+
+| Variable         | Default                                         | Description               |
+| ---------------- | ----------------------------------------------- | ------------------------- |
+| `MONGO_URI`      | `mongodb://mongo:27017/taskboard`               | MongoDB connection string |
+| `JWT_SECRET`     | `taskboard-dev-secret-key-change-in-production` | Secret for signing JWTs   |
+| `JWT_EXPIRATION` | `24h`                                           | JWT token expiration      |
+| `SERVER_PORT`    | `3000`                                          | Backend server port       |
+| `CLIENT_PORT`    | `4200`                                          | Frontend dev server port  |
+| `NODE_ENV`       | `development`                                   | Node environment          |
+
 
 ## Project Structure
 
@@ -239,3 +262,4 @@ realtime-taskboard/
         ├── types/                   # TypeScript interfaces and enums
         └── utils/                   # Password hashing, response factory
 ```
+
