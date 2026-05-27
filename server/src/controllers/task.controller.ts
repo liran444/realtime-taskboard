@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { TaskService } from '../services/task.service';
 import { ResponseFactory } from '../utils/response.factory';
-import { TaskStatus, TaskPriority, TASK_STATUSES, TASK_PRIORITIES } from '../types';
+import { TaskStatus, TaskPriority } from '../types';
 
 function paramId(req: Request): string {
   return req.params.id as string;
@@ -47,38 +47,6 @@ export class TaskController {
 
   create = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { title, description, status, priority } = req.body;
-
-      if (!title || typeof title !== 'string' || !title.trim()) {
-        const response = ResponseFactory.error('Title is required', 400);
-        res.status(response.statusCode).json(response);
-        return;
-      }
-      if (title.trim().length > 100) {
-        const response = ResponseFactory.error('Title cannot exceed 100 characters', 400);
-        res.status(response.statusCode).json(response);
-        return;
-      }
-      if (description && description.trim().length > 500) {
-        const response = ResponseFactory.error('Description cannot exceed 500 characters', 400);
-        res.status(response.statusCode).json(response);
-        return;
-      }
-      if (status && !TASK_STATUSES.includes(status)) {
-        const response = ResponseFactory.error(
-          `Invalid status. Must be one of: ${TASK_STATUSES.join(', ')}`, 400,
-        );
-        res.status(response.statusCode).json(response);
-        return;
-      }
-      if (priority && !TASK_PRIORITIES.includes(priority)) {
-        const response = ResponseFactory.error(
-          `Invalid priority. Must be one of: ${TASK_PRIORITIES.join(', ')}`, 400,
-        );
-        res.status(response.statusCode).json(response);
-        return;
-      }
-
       const task = await this.taskService.createTask(req.body, req.user!.userId);
       const response = ResponseFactory.created(task);
       res.status(response.statusCode).json(response);
@@ -89,38 +57,6 @@ export class TaskController {
 
   update = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { title, description, status, priority } = req.body;
-
-      if (title !== undefined && (typeof title !== 'string' || !title.trim())) {
-        const response = ResponseFactory.error('Title cannot be empty', 400);
-        res.status(response.statusCode).json(response);
-        return;
-      }
-      if (title && title.trim().length > 100) {
-        const response = ResponseFactory.error('Title cannot exceed 100 characters', 400);
-        res.status(response.statusCode).json(response);
-        return;
-      }
-      if (description && description.trim().length > 500) {
-        const response = ResponseFactory.error('Description cannot exceed 500 characters', 400);
-        res.status(response.statusCode).json(response);
-        return;
-      }
-      if (status && !TASK_STATUSES.includes(status)) {
-        const response = ResponseFactory.error(
-          `Invalid status. Must be one of: ${TASK_STATUSES.join(', ')}`, 400,
-        );
-        res.status(response.statusCode).json(response);
-        return;
-      }
-      if (priority && !TASK_PRIORITIES.includes(priority)) {
-        const response = ResponseFactory.error(
-          `Invalid priority. Must be one of: ${TASK_PRIORITIES.join(', ')}`, 400,
-        );
-        res.status(response.statusCode).json(response);
-        return;
-      }
-
       const task = await this.taskService.updateTask(paramId(req), req.body, req.user!.userId);
       const response = ResponseFactory.success(task);
       res.status(response.statusCode).json(response);
@@ -141,17 +77,7 @@ export class TaskController {
 
   updateStatus = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { status } = req.body;
-
-      if (!status || !TASK_STATUSES.includes(status)) {
-        const response = ResponseFactory.error(
-          `Invalid status. Must be one of: ${TASK_STATUSES.join(', ')}`, 400,
-        );
-        res.status(response.statusCode).json(response);
-        return;
-      }
-
-      const task = await this.taskService.updateStatus(paramId(req), status, req.user!.userId);
+      const task = await this.taskService.updateStatus(paramId(req), req.body.status, req.user!.userId);
       const response = ResponseFactory.success(task);
       res.status(response.statusCode).json(response);
     } catch (error) {
