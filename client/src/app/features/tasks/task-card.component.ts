@@ -29,13 +29,13 @@ import { Task, TaskPriority } from '../../models/task.model';
       }
 
       <mat-card-header>
-        <mat-card-title class="task-title">{{ task.title | slice:0:40 }}{{ task.title.length > 40 ? '...' : '' }}</mat-card-title>
+        <mat-card-title class="task-title">{{ task.title | slice:0:30 }}{{ task.title.length > 30 ? '...' : '' }}</mat-card-title>
       </mat-card-header>
 
       <mat-card-content>
         <div class="task-description-container">
           @if (task.description) {
-            <span class="task-description">{{ task.description | slice:0:50 }}{{ task.description.length > 50 ? '...' : '' }}</span>
+            <span class="task-description">{{ task.description | slice:0:40 }}{{ task.description.length > 40 ? '...' : '' }}</span>
           } @else {
             <span class="task-description">-- No description --</span>
           }
