@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { BehaviorSubject, Observable, Subscription, tap } from 'rxjs';
+import { BehaviorSubject, Observable, Subject, Subscription, tap } from 'rxjs';
 import { Task, CreateTaskRequest, UpdateTaskRequest, TaskStatus, TaskPriority } from '../../models/task.model';
 import { ApiResponse } from '../../models/user.model';
 import { SocketService } from './socket.service';
@@ -21,12 +21,20 @@ export class TaskService {
   private loading$ = new BehaviorSubject<boolean>(false);
   private socketSubs: Subscription[] = [];
 
+  // Emits when a socket event indicates the current page should be re-fetched
+  // (e.g. another user created/deleted/updated a task)
+  private reload$ = new Subject<void>();
+
   getLoading(): Observable<boolean> {
     return this.loading$.asObservable();
   }
 
   getTotalCount(): Observable<number> {
     return this.totalCount$.asObservable();
+  }
+
+  getReload(): Observable<void> {
+    return this.reload$.asObservable();
   }
 
   loadTasks(
@@ -95,25 +103,21 @@ export class TaskService {
     this.disposeSocketListeners();
 
     this.socketSubs.push(
-      // New tasks from other clients bump the total count. We don't append to
-      // the current page since it may not belong here (wrong sort position).
+      // For create/update/delete, signal a page reload so the component
+      // re-fetches from the server with correct pagination and totals.
       this.socketService.on<Task>('task:created').subscribe(() => {
-        this.totalCount$.next(this.totalCount$.value + 1);
+        this.reload$.next();
       }),
 
-      this.socketService.on<Task>('task:updated').subscribe(task => {
-        const current = this.tasks$.value.map(t => t._id === task._id ? task : t);
-        this.tasks$.next(current);
+      this.socketService.on<Task>('task:updated').subscribe(() => {
+        this.reload$.next();
       }),
 
-      this.socketService.on<{ taskId: string }>('task:deleted').subscribe(({ taskId }) => {
-        const wasOnPage = this.tasks$.value.some(t => t._id === taskId);
-        if (wasOnPage) {
-          this.tasks$.next(this.tasks$.value.filter(t => t._id !== taskId));
-        }
-        this.totalCount$.next(Math.max(0, this.totalCount$.value - 1));
+      this.socketService.on<{ taskId: string }>('task:deleted').subscribe(() => {
+        this.reload$.next();
       }),
 
+      // Lock/unlock are lightweight UI-only updates — no reload needed
       this.socketService.on<{ taskId: string; lockedBy: any }>('task:locked').subscribe(({ taskId, lockedBy }) => {
         const current = this.tasks$.value.map(t =>
           t._id === taskId ? { ...t, lockedBy } : t
